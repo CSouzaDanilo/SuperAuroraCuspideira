@@ -1,4 +1,4 @@
-# SUPER AURORA CUSPIDEIRA — V10
+# SUPER AURORA CUSPIDEIRA — V25
 
 - Blocos comuns: tijolos marrons.
 - Blocos rachados: amarelos.
