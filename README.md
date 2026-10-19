@@ -35,3 +35,34 @@ Os 7 arquivos MP4 enviados foram convertidos em MP3 e integrados em `assets/audi
 Os sons originais sintetizados continuam para moedas e blocos, pois não foram enviados áudios para esses eventos.
 
 Versão 15: removido o efeito sonoro de derrotar inimigo (arquivo e chamadas).
+
+
+Versão 17: baseada na V15; efeitos em WAV com silêncio inicial removido, pré-carregados, sem alterar a música MP3.
+
+
+## V18 — recompensa por todas as moedas
+Ao coletar todas as moedas da fase, Aurora recebe +1 vida e desbloqueia o Super Cuspe. Uma tela de tutorial pausa o jogo e explica o comando. Após confirmar com ENTER ou ENTENDI, um toque rápido em C lança o cuspe comum; segurar C por aproximadamente 0,6 segundo e soltar lança o Super Cuspe. O disparo especial derrota qualquer inimigo em um hit e destrói até dois blocos consecutivos, atravessando o primeiro. Uma barra de carga aparece acima da Aurora.
+
+
+## Versão 19
+- Chupeta especial na plataforma em x=1720: libera Super Cuspe (segure C, solte para disparar).
+- Duas ultimas moedas removidas. Todas as moedas concedem +1 coracao, sem liberar o poder.
+- A chegada da fase 1-1 inicia a fase 1-2, repetindo o mapa e preservando coracoes e poder.
+- Aviso do buraco: placa triangular amarela com borda preta, sem seta.
+
+
+## Versão 20
+- Super Cuspe agora é uma esfera azul com brilho, mantendo o dano especial e alcance de até dois blocos.
+- SUPER SAPO antes da faixa de chegada nas fases 1-1 e 1-2: 8 pontos de vida; cuspe normal causa 1, Super Cuspe causa 2, danos acumulam. Barra de vida visível.
+- A conclusão da fase exige derrotar o Super Sapo.
+- Colisão preditiva entre inimigos: eles invertem o sentido ao se encontrar, sem atravessar uns aos outros.
+- Sons da versão 19 preservados.
+
+
+V22: fundo da feira com predominância amarela, todos os blocos marrons, nova Super Chupeta pixel art rosa/dourada na fase 1-1 e sapatinho rosa na fase 1-2 sobre plataforma central. Pulo duplo bloqueado até coletar sapatinho; tela de instruções ao coletar. Poderes persistem entre fases.
+
+
+V23: removidas as caixas decorativas vermelhas/verdes do primeiro plano; adicionada parede de tijolos marrons (2 colunas x 5 blocos) apos a plataforma da Super Chupeta, destrutivel com cuspe. A mesma barreira fica na fase 1-2.
+
+
+V25: Seta para baixo agacha Aurora enquanto estiver no chao; agachada ela fica parada e cospe numa altura menor. Parede apos a Super Chupeta aumentada de 5 para 7 blocos de altura, mantendo 2 colunas. Removida a moeda sobreposta a barreira, com contagem total atualizada automaticamente.
