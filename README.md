@@ -1,9 +1,9 @@
-Projeto pessoal feito com ajuda da I.A. ChatGPT, Super Aurora Cuspideira.
-
-
-CONTROLES: 
-
-Pular: Tecla Z
-Cuspir: Tecla C
-Frente: Seta Dir
-Trás: Seta Esq
+Projeto pessoal feito com ajuda da I.A. ChatGPT, Super Aurora Cuspideira. <br>
+<br>
+<br>
+CONTROLES: <br>
+<br>
+Pular: Tecla Z <br>
+Cuspir: Tecla C <br>
+Frente: Seta Dir <br>
+Trás: Seta Esq <br>
