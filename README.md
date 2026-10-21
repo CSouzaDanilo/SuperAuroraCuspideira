@@ -10,4 +10,7 @@ Frente: Seta Dir <br>
 Trás: Seta Esq <br>
 <br>
 <br>
-Abrir o arquivo <b>index.html</b> no seu navegador favorito.
+Ao baixar, extraia o conteúdo do pacote .ZIP e abra o arquivo <b>index.html</b> no seu navegador favorito.
+<br>
+Também disponível em: https://daniloati.github.io/SuperAuroraCuspideira
+
