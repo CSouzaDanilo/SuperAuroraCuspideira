@@ -20,5 +20,5 @@ Então por que não fazer um jogo onde o poder principal é o cuspe?
 <br>
 Ao baixar, extraia o conteúdo do pacote .ZIP e abra o arquivo index.html no seu navegador favorito.
 
-Também disponível em: https://daniloati.github.io/SuperAuroraCuspideira
+Também disponível em: https://csouzadanilo.github.io/SuperAuroraCuspideira
 
