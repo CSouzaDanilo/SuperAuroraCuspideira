@@ -1,0 +1,20 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Editor de Fases — Super Aurora Cuspideira</title><link rel="stylesheet" href="css/editor.css"></head>
+<body><header><h1>★ EDITOR DE FASES ★</h1><p>SUPER AURORA CUSPIDEIRA · V27</p></header>
+<main><div class="toolbar">
+<label>FASE <select id="phase"><option value="1">1-1</option><option value="2">1-2</option></select></label>
+<label>FERRAMENTA <select id="tool"><option value="select">Selecionar / mover</option><option value="block">Bloco</option><option value="coin">Moeda</option><option value="enemy">Inimigo</option><option value="platform">Plataforma</option><option value="pacifier">Super Chupeta</option><option value="shoe">Sapatinho Rosa</option><option value="hole">Buraco</option><option value="boss">Super Sapo Rei</option><option value="start">Início da fase</option><option value="finish">Final da fase</option><option value="erase">Apagar</option></select></label>
+<label>INIMIGO <select id="enemyKind"><option value="barata">Barata</option><option value="joaninha">Joaninha</option><option value="caramujo">Caramujo</option><option value="sapo">Sapo</option><option value="lesma">Lesma</option><option value="besouro">Besouro</option><option value="caranguejo">Caranguejo</option></select></label>
+<label>ZOOM <select id="zoom"><option value="1">100%</option><option value="1.5">150%</option><option value="2" selected>200%</option><option value="3">300%</option></select></label>
+<label class="check"><input id="snap" type="checkbox" checked> Grade 16px</label>
+<label class="check"><input id="grid" type="checkbox" checked> Mostrar grade</label>
+</div>
+<div class="workspace"><div class="canvas-side">
+<div class="canvas-top"><span id="coord">X: — Y: —</span><span id="viewport">Mapa 3552 × 216</span></div>
+<div id="viewportBox"><canvas id="map" width="1050" height="432" aria-label="Mapa editável da fase"></canvas></div>
+<div class="scrollrow"><label>DESLOCAMENTO <input id="scroll" type="range" min="0" max="3000" value="0" step="1"></label><span id="offset">X 0</span></div>
+<div class="help">Clique para criar ou selecionar · Arraste para mover · Delete apaga · Ctrl+Z desfaz · Ctrl+Y refaz · Ctrl+D duplica · Shift+arrastar move a visão</div>
+</div>
+<aside><h2>PROPRIEDADES</h2><div id="props"><p>Selecione um objeto para editar coordenadas e propriedades.</p></div><button id="duplicate">DUPLICAR</button><button id="delete" class="danger">EXCLUIR</button><h2>CAMADAS</h2><div id="layers"></div><h2>VALIDAÇÃO</h2><div id="warnings"></div></aside></div>
+<div class="actions"><button id="undo">↶ DESFAZER</button><button id="redo">↷ REFAZER</button><button id="save">💾 SALVAR RASCUNHO</button><button id="export">⬇ EXPORTAR JSON</button><button id="import">⬆ IMPORTAR JSON</button><button id="test" class="accent">▶ TESTAR FASE</button><button id="reset" class="danger">RESTAURAR FASE</button><a href="index.html">ABRIR JOGO</a><a href="configuracoes.html">CONFIGURAÇÕES</a><input id="importFile" type="file" accept=".json,application/json" hidden></div>
+<div id="status" role="status"></div><p class="note">A fase 1-1 e a 1-2 são independentes. Salve antes de testar. Os rascunhos ficam neste navegador; exporte JSON para fazer backup. Para testar via servidor local: <code>python3 -m http.server 8000</code>.</p>
+</main><script src="js/levels.js"></script><script src="js/editor.js"></script></body></html>

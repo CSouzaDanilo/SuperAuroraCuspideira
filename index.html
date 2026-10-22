@@ -1,5 +1,25 @@
 <!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SUPER AURORA CUSPIDEIRA — Feira de Rua</title>
-<link rel="stylesheet" href="css/style.css"></head><body><div class="wrap"><header><h1>★ SUPER AURORA CUSPIDEIRA ★</h1><span class="small">MUNDO 1-1 · FEIRA DE RUA · 16 BITS</span></header><div class="frame"><canvas id="game" width="384" height="216" aria-label="Jogo de plataforma Super Aurora Cuspideira"></canvas><div class="overlay" id="overlay"><div class="panel"><h2 id="title">SUPER AURORA<br>CUSPIDEIRA</h2><p id="message">A feira está cheia de bichinhos! Pule pelas bancas, quebre caixas com cuspe e recolha moedas.</p><p class="hint" id="sub">← → ANDAR · Z PULAR · C CUSPIR · ENTER PAUSAR</p><button id="play">COMEÇAR</button><button id="sound">♫ SOM ON</button></div></div></div><div class="status"><span id="score">PONTOS 000000</span><span id="money">MOEDAS ×00</span><span id="health">♥ ♥ ♥</span><span id="level">MUNDO 1-1 · FEIRA DE RUA</span></div><div class="controls"><div><button data-k="ArrowLeft">◀</button><button data-k="ArrowRight">▶</button></div><div><button data-k="KeyZ">Z ↥</button><button data-k="KeyC">C 💧</button><button id="pause">Ⅱ</button></div></div><p class="hint">Teclado: ← → movimentar · Z pular (pulo duplo após pegar sapatinho) · C cuspir · ao desbloquear: segurar C para carregar e soltar para disparar · ENTER pausar/continuar · R reiniciar. Funciona offline com arquivos locais organizados.</p></div>
+<link rel="stylesheet" href="css/style.css"></head><body><div class="wrap"><header><h1>★ SUPER AURORA CUSPIDEIRA ★</h1><span class="small">MUNDO 1-1 · FEIRA DE RUA · 16 BITS</span></header><div class="frame"><canvas id="game" width="384" height="216" aria-label="Jogo de plataforma Super Aurora Cuspideira"></canvas><div id="front" class="front">
+  <div class="front-scene" id="frontScene">
+    <section id="splash" class="screen splash active" aria-label="Tela de abertura">
+      <div class="logo-group"><h2 class="game-logo"><span>SUPER</span><span>AURORA</span><span>CUSPIDEIRA</span></h2><img class="aurora-title" src="assets/sprites/aurora/idle_00.png" alt="Aurora"></div>
+      <p class="press-pulse">APERTE Z</p>
+    </section>
+    <section id="mainMenu" class="screen menu-screen" aria-label="Menu principal">
+      <h2 class="menu-heading">SUPER AURORA<br>CUSPIDEIRA</h2>
+      <nav id="menuOptions"><div class="menu-option selected">INICIAR JOGO</div><div class="menu-option">COMO JOGAR?</div><div class="menu-option">CRÉDITOS DO PAPAI</div></nav>
+      <p class="menu-footer">APERTE Z PARA ESCOLHER</p>
+    </section>
+    <section id="howTo" class="screen info-screen" aria-label="Como jogar">
+      <div class="pixel-window"><h2>COMO JOGAR?</h2><p>← → &nbsp; MOVIMENTAR</p><p>Z &nbsp; PULAR</p><p>C &nbsp; CUSPIR</p><p>ENTER &nbsp; PAUSAR</p><p class="smaller">DESCUBRA NOVOS PODERES NA AVENTURA!</p><div class="return-option">▶ VOLTAR</div></div>
+    </section>
+    <section id="credits" class="screen info-screen" aria-label="Créditos do Papai">
+      <div class="pixel-window"><h2>CRÉDITOS DO PAPAI</h2><p class="credits-copy">Esse é os créditos do Papai que ainda irá escrever algo melhor para demonstrar o amor que ele e a Mamãe tem pela nossa Aurora Maria</p><div class="return-option">▶ FECHAR</div></div>
+    </section>
+  </div>
+</div><div class="overlay" id="overlay" style="display:none"><div class="panel"><h2 id="title">SUPER AURORA<br>CUSPIDEIRA</h2><p id="message">A feira está cheia de bichinhos! Pule pelas bancas, quebre caixas com cuspe e recolha moedas.</p><p class="hint" id="sub">← → ANDAR · Z / ↑ PULAR · C CUSPIR · ENTER PAUSAR</p><button id="play">COMEÇAR</button><button id="sound">♫ SOM ON</button></div></div></div><div class="status"><span id="score">PONTOS 000000</span><span id="money">MOEDAS ×00</span><span id="health">♥ ♥ ♥</span><span id="level">MUNDO 1-1 · FEIRA DE RUA</span></div><div class="controls"><div><button data-k="ArrowLeft">◀</button><button data-k="ArrowRight">▶</button><button data-k="ArrowUp">▲</button></div><div><button data-k="KeyZ">Z ↥</button><button data-k="KeyC">C 💧</button><button id="pause">Ⅱ</button></div></div><p class="hint">Teclado: ← → movimentar · Z ou ↑ pular (pulo duplo após pegar sapatinho) · C cuspir · ao desbloquear: segurar C para carregar e soltar para disparar · ENTER pausar/continuar · R reiniciar. Funciona offline com arquivos locais organizados.</p></div>
 <script src="js/sprites.js"></script>
+<script src="js/config.js"></script>
+<script src="js/levels.js"></script>
 <script src="js/game.js"></script></body></html>

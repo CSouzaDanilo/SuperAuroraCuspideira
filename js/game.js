@@ -1,8 +1,9 @@
 
 (()=>{'use strict';
 const canvas=document.querySelector('#game'),g=canvas.getContext('2d'),W=384,H=216,T=16,$=s=>document.querySelector(s);g.imageSmoothingEnabled=false;
-const keys={},mapWidth=3552,ground=188;let mode='menu',camera=0,score=0,money=0,health=3,tick=0,last=0,acc=0,sound=true,audio=null,finish=3470,superUnlocked=false,chargeTicks=0,chargeReady=false,chargeHeld=false,chargeMax=65,chargeThreshold=36,level=1,levelRewarded=false,pacifier=null,shoe=null,doubleJumpUnlocked=false,boss=null;
-const player={x:32,y:140,w:17,h:29,vx:0,vy:0,grounded:false,face:1,step:0,cool:0,spitAnim:0,inv:0,coyote:0,jumps:0,crouching:false};
+const CFG=window.AURORA_CONFIG||{};
+const keys={};let mapWidth=3552,ground=188;let mode='intro',camera=0,score=0,money=0,health=CFG.player.initialHearts,tick=0,last=0,acc=0,sound=true,audio=null,finish=3470,superUnlocked=false,chargeTicks=0,chargeReady=false,chargeHeld=false,chargeMax=CFG.superSpit.chargeMaxFrames,chargeThreshold=CFG.superSpit.chargeFrames,spitKeyWasDown=false,stageReadyAt=0,level=1,levelRewarded=false,pacifier=null,shoe=null,doubleJumpUnlocked=false,boss=null;
+const player={x:32,y:140,w:17,h:29,vx:0,vy:0,grounded:false,face:1,step:0,cool:0,spitAnim:0,inv:0,coyote:0,jumps:0};
 let blocks=[],ledges=[],enemies=[],coins=[],shots=[],dust=[],holes=[],market=[];
 const itemImages={pacifier:new Image(),shoe:new Image()};
 itemImages.pacifier.src='assets/sprites/itens/super_chupeta.png';
@@ -29,73 +30,54 @@ function playSound(name){if(!sound)return;const clip=clips[name];if(!clip)return
 function stopSound(name){const clip=clips[name];if(clip){clip.pause();clip.currentTime=0;}}
 function pauseMusic(){clips.feira.pause()}
 function resumeMusic(){if(sound&&mode==='play')playSound('feira')}
-function build(preserve=false){blocks=[];ledges=[];enemies=[];coins=[];shots=[];dust=[];holes=[];market=[];boss=null;shoe=null;
-// Caixas decorativas removidas para nao confundir com os blocos interativos.
-[[405,150,70],[655,137,80],[985,148,65],[1100,120,80],[2370,148,78],[2540,115,90],[3010,120,70],[3230,140,80]].forEach(([x,y,w])=>ledges.push({x,y,w,h:8}));
-[[423,118,2],[1010,116,2],[2390,116,2],[3025,88,0],[3250,108,2]].forEach(([x,y,type])=>blocks.push({x,y,w:16,h:16,type,hp:type===2?1:2,alive:true}));
-// Mundo 1-1: pequeno tutorial de cuspe e pulo antes e depois do primeiro inimigo.
-// Primeiro inimigo começa em x=220. Os blocos ficam apoiados no chão (y=188).
-// O primeiro pode ser destruído com cuspe; a pilha exige pulo duplo ou destruição.
-blocks.push({x:186,y:172,w:16,h:16,type:2,hp:1,alive:true});
-for(const y of [140,156,172])blocks.push({x:304,y,w:16,h:16,type:0,hp:2,alive:true});
-// Escada no lugar da plataforma P805: colunas de 2, 3 e 4 tijolos.
-for(const [x,count] of [[785,2],[817,3],[849,4]]){
- for(let n=0;n<count;n++)blocks.push({x,y:ground-16*(n+1),w:16,h:16,type:0,hp:2,alive:true});
+function build(preserve=false){
+ if(!preserve)level=1;
+ const data=window.AURORA_LEVELS.load(level);
+ blocks=data.blocks;ledges=data.platforms;enemies=data.enemies;coins=data.coins;
+ holes=data.holes;market=[];shots=[];dust=[];
+ mapWidth=data.width;ground=data.ground;finish=data.finish;
+ pacifier=level===1&&!superUnlocked?data.items.pacifier:null;
+ shoe=level===2&&!doubleJumpUnlocked?data.items.shoe:null;
+ boss=data.boss?{...data.boss,hp:CFG.boss.health,maxHp:CFG.boss.health,dir:-1,hit:0,alive:true,phase:0,vy:0,grounded:true,jumpWait:35}:null;
+ if(!preserve){superUnlocked=false;doubleJumpUnlocked=false;health=CFG.player.initialHearts;score=0;level=1;}
+ levelRewarded=false;chargeTicks=0;chargeReady=false;chargeHeld=false;spitKeyWasDown=false;keys.KeyC=false;
+ player.x=data.start.x;player.y=data.start.y;player.vx=0;player.vy=0;player.face=1;player.inv=0;
+ player.cool=0;player.spitAnim=0;player.step=0;player.jumps=0;
+ camera=0;tick=0;money=0;updateHud();
 }
-// Trecho 2: duas barreiras duplas entre caramujo/sapo e sapo/lesma.
-for(const x of [1760,1950])for(const y of [ground-16,ground-32])
- blocks.push({x,y,w:16,h:16,type:0,hp:2,alive:true});
-// Parede alta de tijolos apos a plataforma da chupeta / sapatinho.
- // 5 blocos de altura: Aurora precisa abrir caminho com o cuspe.
- // Cada bloco leva um cuspe normal, para que a passagem seja viavel sem Super Cuspe.
- for(const x of [1840,1856]){
-   for(let n=0;n<7;n++)blocks.push({
-     x,y:ground-16*(n+1),w:16,h:16,type:0,hp:1,alive:true
-   });
- }
-// Trecho 3: buraco real no solo, com largura de 64 pixels.
-holes.push({x:2850,w:64});
-const kinds=['barata','joaninha','caramujo','sapo','lesma','besouro','caranguejo'];
-[220,355,465,700,875,1040,1160,1370,1545,1680,1850,2070,2250,2440,2610,2870,3070,3300].forEach((x,i)=>{let kind=kinds[i%kinds.length],fly=kind==='joaninha';if(x===2870||x===3300)return;enemies.push({x,y:fly?130:ground-16,w:19,h:16,baseY:fly?130:ground-16,kind,dir:i%2?1:-1,hp:kind==='besouro'?3:kind==='caranguejo'?2:1,phase:i*1.3,alive:true,hit:0})});
-for(let x=100;x<3420;x+=63)coins.push({x,y:105+(Math.floor(x/63)%3)*14,got:false});
-// As duas ultimas moedas foram retiradas do mapa.
-coins.splice(-2,2);
-// Remove moeda que ficava sobreposta a parede de tijolos.
-coins=coins.filter(c=>c.x<1830||c.x>1880);
-// Chupeta sobre uma plataforma na metade da fase, somente se ainda nao coletada.
-ledges.push({x:1720,y:134,w:78,h:8});
-pacifier=(level===1&&!superUnlocked)?{x:1751,y:110,w:22,h:22}:null;
-if(level===2){
- ledges.push({x:1720,y:134,w:78,h:8});
- shoe=doubleJumpUnlocked?null:{x:1750,y:109,w:24,h:23};
-}
-// Chefe da terceira parte, antes da faixa de chegada.
-boss={x:3340,y:ground-53,w:55,h:53,dir:-1,hp:8,maxHp:8,hit:0,alive:true,phase:0,vy:0,grounded:true,jumpWait:35};
-if(!preserve){superUnlocked=false;doubleJumpUnlocked=false;health=3;score=0;level=1;}levelRewarded=false;chargeTicks=0;chargeReady=false;chargeHeld=false;keys.KeyC=false;player.x=32;player.y=135;player.vx=0;player.vy=0;player.face=1;player.inv=0;player.cool=0;player.spitAnim=0;player.step=0;player.jumps=0;player.crouching=false;camera=0;tick=0;money=0;updateHud();}
 function updateHud(){$('#score').textContent='PONTOS '+String(score).padStart(6,'0');$('#money').textContent='MOEDAS ×'+String(money).padStart(2,'0');$('#health').textContent='♥ '.repeat(health).trim()||'SEM VIDAS'}
 function overlay(title,message,button='JOGAR'){$('#title').innerHTML=title;$('#message').textContent=message;$('#play').textContent=button;$('#overlay').style.display='grid'}
-function start(){build(false);mode='play';$('#overlay').style.display='none';acc=0;last=performance.now();requestAnimationFrame(loop);playSound('feira')}
-function unlockSuper(){if(superUnlocked)return;superUnlocked=true;pacifier=null;mode='power';pauseMusic();overlay('★ CHUPETA DO SUPER CUSPE! ★','NOVO PODER! Segure C para CARREGAR e SOLTE para disparar. O Super Cuspe derrota inimigos em 1 acerto e destroi ate 2 blocos. Toque C rapidamente para cuspir normalmente.','ENTENDI!');$('#sub').textContent='SEGURE C = CARREGAR · SOLTE C = SUPER CUSPE';}
+const front=$('#front');let menuIndex=0,frontScreen='splash',transitioning=false,frontWaitRelease=false;
+function showFront(screen){frontScreen=screen;for(const el of front.querySelectorAll('.screen'))el.classList.toggle('active',el.id===screen)}
+function showMenu(){stopSound('feira');mode='menu';front.classList.remove('is-hidden');$('#overlay').style.display='none';showFront('mainMenu');updateMenuSelection()}
+function updateMenuSelection(){document.querySelectorAll('.menu-option').forEach((el,i)=>el.classList.toggle('selected',i===menuIndex))}
+function goFromSplash(){if(transitioning)return;transitioning=true;mode='menu';showFront('mainMenu');updateMenuSelection();setTimeout(()=>{transitioning=false},420)}
+function menuChoose(){if(transitioning)return;if(frontScreen==='mainMenu'){if(menuIndex===0)start();else showFront(menuIndex===1?'howTo':'credits')}else if(frontScreen==='howTo'||frontScreen==='credits')showFront('mainMenu')}
+function start(){front.classList.add('is-hidden');build(false);mode='play';$('#overlay').style.display='none';acc=0;last=performance.now();requestAnimationFrame(loop);playSound('feira')}
+function unlockSuper(){if(superUnlocked)return;superUnlocked=true;pacifier=null;mode='power';pauseMusic();overlay('★ CHUPETA DO SUPER CUSPE! ★','NOVO PODER! Segure C para CARREGAR e SOLTE para disparar. O Super Cuspe pode derrotar ate 2 inimigos no mesmo disparo e destroi ate 4 blocos. Toque C rapidamente para cuspir normalmente.','APERTE C');$('#sub').textContent='APERTE C PARA CONTINUAR';}
 function unlockDoubleJump(){
  if(doubleJumpUnlocked||level!==2)return;
  doubleJumpUnlocked=true;shoe=null;mode='power';pauseMusic();
- overlay('★ SAPATINHO ROSA! ★','PULO DUPLO DESBLOQUEADO! Aperte Z para pular e aperte Z novamente enquanto estiver no ar para dar o segundo salto.','ENTENDI!');
- $('#sub').textContent='Z = PULAR · Z NOVAMENTE NO AR = PULO DUPLO';
+ overlay('★ SAPATINHO ROSA! ★','PULO DUPLO DESBLOQUEADO! Aperte Z ou ↑ para pular e aperte novamente enquanto estiver no ar para dar o segundo salto.','APERTE Z');
+ $('#sub').textContent='APERTE Z OU ↑ PARA CONTINUAR';
 }
-function awardCoins(){if(levelRewarded)return;levelRewarded=true;health++;score+=500;updateHud();spark(player.x+9,player.y,'#ffe96a',20);sfx(990,.24,'triangle',.04);}
-function nextLevel(){level=2;build(true);mode='stage';pauseMusic();overlay('FASE 1-2','AURORA CHEGOU A FASE 1-2! Por enquanto, a Feira de Rua se repete para testar os poderes. O Super Cuspe e os coracoes foram mantidos. Encontre o SAPATINHO ROSA no meio da fase para desbloquear o PULO DUPLO.','JOGAR 1-2');$('#sub').textContent='FASE 1-2 · TESTE DO SUPER CUSPE';}
-function resumeStage(){if(mode!=='stage')return;mode='play';$('#overlay').style.display='none';last=performance.now();acc=0;requestAnimationFrame(loop);resumeMusic()}
-function resumePower(){if(mode!=='power')return;mode='play';keys.KeyC=false;chargeHeld=false;chargeTicks=0;$('#overlay').style.display='none';last=performance.now();acc=0;requestAnimationFrame(loop);resumeMusic()}
+function awardCoins(){if(levelRewarded)return;levelRewarded=true;health+=CFG.rewards.allCoinsHearts;score+=CFG.rewards.allCoinsPoints;updateHud();spark(player.x+9,player.y,'#ffe96a',20);sfx(990,.24,'triangle',.04);}
+function nextLevel(){level=2;build(true);mode='stage';pauseMusic();playSound('vitoria');stageReadyAt=performance.now()+CFG.transitions.victoryDelayMs;
+ overlay('FASE CONCLUÍDA!','','');
+ $('#overlay').classList.add('stage-complete');
+ setTimeout(()=>{if(mode==='stage')resumeStage()},CFG.transitions.victoryDelayMs);}
+function resumeStage(){if(mode!=='stage'||performance.now()<stageReadyAt)return;mode='play';$('#overlay').classList.remove('stage-complete');$('#overlay').style.display='none';last=performance.now();acc=0;requestAnimationFrame(loop);resumeMusic()}
+function resumePower(){if(mode!=='power')return;mode='play';keys.KeyC=false;keys.KeyZ=false;keys.ArrowUp=false;chargeHeld=false;chargeTicks=0;spitKeyWasDown=false;$('#overlay').style.display='none';last=performance.now();acc=0;requestAnimationFrame(loop);resumeMusic()}
 function togglePause(){if(mode==='play'){mode='pause';pauseMusic();overlay('PAUSADO','A feira está esperando a Aurora. Aperte ENTER para continuar.','CONTINUAR')}else if(mode==='pause'){mode='play';$('#overlay').style.display='none';last=performance.now();acc=0;requestAnimationFrame(loop);resumeMusic()}}
-function end(win){stopSound('feira');mode=win?'win':'lost';overlay(win?'AURORA VENCEU!':'FIM DE JOGO',win?'A feira está livre dos bichinhos! Pontuação: '+score:'Tente outra vez! Pontuação: '+score,'JOGAR DE NOVO');if(win)playSound('vitoria');else sfx(180,.3)}
-function damage(){if(player.inv>0||mode!=='play')return;health--;player.inv=80;player.vy=-4;player.vx=-player.face*2.3;playSound('dano');updateHud();if(health<=0)end(false)}
+function end(win){stopSound('feira');mode=win?'win':'lost';overlay(win?'AURORA VENCEU!':'FIM DE JOGO',win?'A feira está livre dos bichinhos! Pontuação: '+score:'Tente outra vez! Pontuação: '+score,'APERTE Z');if(win)playSound('vitoria');else sfx(180,.3)}
+function damage(){if(player.inv>0||mode!=='play')return;health--;player.inv=CFG.player.invulnerabilityFrames;player.vy=-4;player.vx=-player.face*2.3;playSound('dano');updateHud();if(health<=0)end(false)}
 // A origem do cuspe acompanha a boca do sprite (não o centro do corpo).
-function mouthPosition(){return {x:player.face>0?player.x+19:player.x-2,y:player.y+(player.crouching?22:11)}}
+function mouthPosition(){return {x:player.face>0?player.x+19:player.x-2,y:player.y+11}}
 function spit(power=false){
  if(player.cool>0||mode!=='play')return;
- player.cool=power?28:18;player.spitAnim=13;
+ player.cool=power?CFG.superSpit.cooldownFrames:CFG.normalSpit.cooldownFrames;player.spitAnim=13;
  const mouth=mouthPosition(),dir=player.face;
- shots.push({x:mouth.x+(dir>0?0:(power?-13:-7)),y:mouth.y-(power?5:2),w:power?15:7,h:power?15:5,vx:dir*(power?7.2:5.2),life:55,age:0,dir,power,blocksLeft:power?2:1});
+ shots.push({x:mouth.x+(dir>0?0:(power?-13:-7)),y:mouth.y-(power?5:2),w:power?15:7,h:power?15:5,vx:dir*(power?7.2:5.2),life:55,age:0,dir,power,blocksLeft:power?CFG.superSpit.maxBlocks:CFG.normalSpit.maxBlocks,enemiesLeft:power?CFG.superSpit.maxEnemies:CFG.normalSpit.maxEnemies});
  spark(mouth.x,mouth.y,power?'#73dbff':'#b5faff',power?16:5);
  playSound('cuspe');
 }
@@ -162,20 +144,29 @@ function collideBlocksY(oldY){
   else {player.y=oldY;player.vy=0;}
  }
 }
-function step(){tick++;player.crouching=!!keys.ArrowDown&&player.grounded;let left=keys.ArrowLeft&&!player.crouching,right=keys.ArrowRight&&!player.crouching;
-if(left){player.vx=Math.max(-2.25,player.vx-.42);player.face=-1}if(right){player.vx=Math.min(2.25,player.vx+.42);player.face=1}if(!left&&!right)player.vx*=.72;
-if(player.crouching)player.vx=0;
+function step(){tick++;let left=keys.ArrowLeft,right=keys.ArrowRight;
+if(left){player.vx=Math.max(-CFG.player.maxSpeed,player.vx-CFG.player.acceleration);player.face=-1}if(right){player.vx=Math.min(CFG.player.maxSpeed,player.vx+CFG.player.acceleration);player.face=1}if(!left&&!right)player.vx*=CFG.player.friction;
+
 if(Math.abs(player.vx)<.04)player.vx=0;
-if(player.grounded)player.coyote=6;else player.coyote=Math.max(0,player.coyote-1);
-if(keys.KeyZ&&!player.crouching&&!keys.jumpLock&&(player.jumps<(doubleJumpUnlocked?2:1)||player.coyote>0)){const second=player.jumps>=1;player.vy=second?-6.1:-6.7;player.grounded=false;player.coyote=0;player.jumps=Math.min(2,player.jumps+1);keys.jumpLock=true;spark(player.x+8,player.y+player.h,'#c3efff',second?10:4);playSound(second?'pulo_duplo':'pulo')}if(!keys.KeyZ)keys.jumpLock=false;
-if(superUnlocked){if(keys.KeyC){if(!chargeHeld){chargeHeld=true;chargeTicks=0;}chargeTicks=Math.min(chargeMax,chargeTicks+1);if(chargeTicks===chargeThreshold)spark(player.x+9,player.y+7,'#7be9ff',12);}else if(chargeHeld){const power=chargeTicks>=chargeThreshold;chargeHeld=false;chargeTicks=0;spit(power);}}else if(keys.KeyC)spit();player.cool=Math.max(0,player.cool-1);player.spitAnim=Math.max(0,player.spitAnim-1);
+if(player.grounded)player.coyote=CFG.player.coyoteFrames;else player.coyote=Math.max(0,player.coyote-1);
+if((keys.KeyZ||keys.ArrowUp)&&!keys.jumpLock&&(player.jumps<(doubleJumpUnlocked?2:1)||player.coyote>0)){const second=player.jumps>=1;player.vy=second?-CFG.player.doubleJumpForce:-CFG.player.jumpForce;player.grounded=false;player.coyote=0;player.jumps=Math.min(2,player.jumps+1);keys.jumpLock=true;spark(player.x+8,player.y+player.h,'#c3efff',second?10:4);playSound(second?'pulo_duplo':'pulo')}if(!keys.KeyZ&&!keys.ArrowUp)keys.jumpLock=false;
+if(superUnlocked){
+ if(keys.KeyC){
+  if(!spitKeyWasDown){chargeHeld=true;chargeTicks=0;}
+  if(chargeHeld){chargeTicks=Math.min(chargeMax,chargeTicks+1);if(chargeTicks===chargeThreshold)spark(player.x+9,player.y+7,'#7be9ff',12);}
+ }else if(spitKeyWasDown&&chargeHeld){
+  const power=chargeTicks>=chargeThreshold;
+  chargeHeld=false;chargeTicks=0;spit(power);
+ }
+}else if(keys.KeyC&&!spitKeyWasDown)spit();
+spitKeyWasDown=!!keys.KeyC;player.cool=Math.max(0,player.cool-1);player.spitAnim=Math.max(0,player.spitAnim-1);
 let oldX=player.x;player.x+=player.vx;collideBlocksX(oldX);player.x=Math.max(0,Math.min(mapWidth-player.w,player.x));
-let oldY=player.y;player.vy=Math.min(6.5,player.vy+.32);player.y+=player.vy;player.grounded=false;collideBlocksY(oldY);collidePlatforms(player,'y',oldY);
+let oldY=player.y;player.vy=Math.min(CFG.player.maxFallSpeed,player.vy+CFG.player.gravity);player.y+=player.vy;player.grounded=false;collideBlocksY(oldY);collidePlatforms(player,'y',oldY);
 if(player.vy>=0&&oldY+player.h<=ground&&player.y+player.h>=ground&&groundExists(player.x+player.w*.5)){player.y=ground-player.h;player.vy=0;player.grounded=true;player.jumps=0}
 if(player.y>H+25){damage();if(mode==='play'){player.x=Math.max(25,player.x-100);player.y=90;player.vy=0}}
 if(player.grounded&&Math.abs(player.vx)>.2)player.step+=Math.abs(player.vx)*.17;
 if(player.inv>0)player.inv--;
-for(const c of coins){if(!c.got&&rect(player,{x:c.x,y:c.y,w:9,h:11})){c.got=true;money++;score+=50;sfx(850,.05);if(money===coins.length)awardCoins()}}
+for(const c of coins){if(!c.got&&rect(player,{x:c.x,y:c.y,w:9,h:11})){c.got=true;money++;score+=CFG.rewards.coinPoints;sfx(850,.05);if(money===coins.length)awardCoins()}}
 if(pacifier&&rect(player,pacifier))unlockSuper();if(shoe&&rect(player,shoe))unlockDoubleJump();
 for(const e of enemies){if(!e.alive)continue;e.phase+=.06;if(e.hit>0)e.hit--;
 
@@ -204,21 +195,21 @@ if(boss&&boss.alive){
      for(const k of blocks){if(k.alive&&b.x+b.w>k.x&&b.x<k.x+k.w&&oldY+b.h<=k.y&&b.y+b.h>=k.y){b.y=k.y-b.h;b.vy=0;b.grounded=true;break}}
      if(!b.grounded&&oldY+b.h<=ground&&b.y+b.h>=ground&&groundExists(b.x+b.w/2)){b.y=ground-b.h;b.vy=0;b.grounded=true}
    }
-   if(b.y>H+50){b.x=3340;b.y=ground-b.h;b.vy=0;b.grounded=true;b.jumpWait=35}
+   if(b.y>H+50){b.x=Math.max(0,Math.min(mapWidth-b.w,finish-130));b.y=ground-b.h;b.vy=0;b.grounded=true;b.jumpWait=35}
  }
  if(rect(player,b)){damage();if(oldX+player.w<=b.x+5){player.x=b.x-player.w;player.vx=0}else if(oldX>=b.x+b.w-5){player.x=b.x+b.w;player.vx=0}}
 }
  for(let i=shots.length-1;i>=0;i--){let p=shots[i];p.x+=p.vx;p.life--;p.age++;if(p.age%3===0)spark(p.x-p.dir*3,p.y+2,'#8bdfff',1);let hit=false;
-for(const b of blocks){if(!b.alive||!rect(p,b))continue;b.hp=p.power?0:b.hp-1;hit=true;spark(p.x,p.y,p.power?'#ffe67a':'#aef7ff');if(b.hp<=0){b.alive=false;score+=75;spark(b.x+8,b.y+8,'#d88b4a',13);sfx(370,.08)}if(p.power){p.blocksLeft--;if(p.blocksLeft>0){hit=false;continue;}}break}
+for(const b of blocks){if(!b.alive||!rect(p,b))continue;b.hp=p.power?0:b.hp-CFG.normalSpit.blockDamage;hit=true;spark(p.x,p.y,p.power?'#ffe67a':'#aef7ff');if(b.hp<=0){b.alive=false;score+=CFG.rewards.blockPoints;spark(b.x+8,b.y+8,'#d88b4a',13);sfx(370,.08)}p.blocksLeft--;if(p.blocksLeft>0){hit=false;continue;}break}
 if(!hit&&boss&&boss.alive&&rect(p,boss)){
-   hit=true;boss.hp=Math.max(0,boss.hp-(p.power?2:1));boss.hit=13;
+   hit=true;boss.hp=Math.max(0,boss.hp-(p.power?CFG.superSpit.bossDamage:CFG.normalSpit.bossDamage));boss.hit=13;
    spark(p.x,p.y,'#8deaff',15);
-   if(boss.hp===0){boss.alive=false;score+=1200;spark(boss.x+24,boss.y+20,'#8af5a3',45);sfx(520,.28,'triangle',.04);}
+   if(boss.hp===0){boss.alive=false;score+=CFG.rewards.bossPoints;spark(boss.x+24,boss.y+20,'#8af5a3',45);sfx(520,.28,'triangle',.04);}
  }
- if(!hit)for(const e of enemies){if(e.alive&&rect(p,e)){hit=true;e.hp=p.power?0:e.hp-1;e.hit=8;spark(p.x,p.y,'#b9faff');if(e.hp<=0){e.alive=false;score+=150;spark(e.x+8,e.y+8,'#ffb76b',12);}break}}
+ if(!hit)for(const e of enemies){if(e.alive&&rect(p,e)){e.hp=p.power?e.hp-CFG.superSpit.enemyDamage:e.hp-CFG.normalSpit.enemyDamage;e.hit=8;spark(p.x,p.y,'#b9faff');if(e.hp<=0){e.alive=false;score+=CFG.rewards.enemyPoints;spark(e.x+8,e.y+8,'#ffb76b',12);}p.enemiesLeft--;hit=p.enemiesLeft<=0;break}}
 if(hit||p.life<=0||p.x<0||p.x>mapWidth)shots.splice(i,1)}
 for(let i=dust.length-1;i>=0;i--){let d=dust[i];d.x+=d.vx;d.y+=d.vy;d.vy+=.14;if(--d.life<=0)dust.splice(i,1)}
-camera=Math.max(0,Math.min(mapWidth-W,player.x-110));if(player.x>finish&&(!boss||!boss.alive)){score+=1000;if(level===1)nextLevel();else end(true)}updateHud();}
+camera=Math.max(0,Math.min(mapWidth-W,player.x-110));if(player.x>finish&&(!boss||!boss.alive)){score+=CFG.rewards.stagePoints;if(level===1)nextLevel();else end(true)}updateHud();}
 function sky(){
  if(marketBackground.complete&&marketBackground.naturalWidth){
    const srcW=1120,srcH=550;
@@ -324,16 +315,7 @@ function drawBoss(){
  r(x+3,y-32,Math.round((b.w-6)*b.hp/b.maxHp),4,'#8ce64f');
  text('SUPER SAPO REI',x-15,y-47,'#fff2a5',8);
 }
-function aurora(){if(player.inv>0&&tick%6<3)return;const moving=player.grounded&&Math.abs(player.vx)>.25;const action=player.inv>0?'hurt':player.spitAnim>0?'spit':!player.grounded?'jump':moving?(Math.abs(player.vx)>1.8?'run':'walk'):'idle';const animFrame=action==='jump'?(player.vy<0?2:4):action==='spit'?Math.min(4,Math.floor((13-player.spitAnim)/2.6)):Math.floor(action==='idle'?tick/18:player.step*1.7);if(player.crouching){
-  g.save();
-  // Achata apenas o desenho; mantém a base no chão e a animação de cuspe.
-  g.translate(0,player.y+player.h);
-  g.scale(1,.68);
-  g.translate(0,-(player.y+player.h));
-  const drawn=sprite(g,'aurora_'+action,animFrame,player.x-9,player.y-16,36,48,player.face<0);
-  g.restore();
-  if(drawn)return;
-}
+function aurora(){if(player.inv>0&&tick%6<3)return;const moving=player.grounded&&Math.abs(player.vx)>.25;const action=player.inv>0?'hurt':player.spitAnim>0?'spit':!player.grounded?'jump':moving?(Math.abs(player.vx)>1.8?'run':'walk'):'idle';const animFrame=action==='jump'?(player.vy<0?2:4):action==='spit'?Math.min(4,Math.floor((13-player.spitAnim)/2.6)):Math.floor(action==='idle'?tick/18:player.step*1.7);
 if(sprite(g,'aurora_'+action,animFrame,player.x-9,player.y-16,36,48,player.face<0))return;let x=Math.round(player.x),y=Math.round(player.y),walk=player.grounded&&Math.abs(player.vx)>.25,leg=walk?Math.round(Math.sin(player.step)*3):0;
 g.save();g.translate(x+9,y+14);g.scale(player.face,1);g.translate(-9,-14);
 r(1,1,15,14,'#2f2036');r(0,5,5,7,'#302137');r(4,0,10,4,'#302137');
@@ -374,7 +356,37 @@ r(finish,ground-52,3,52,'#f7e4a1');r(finish+3,ground-50,26,15,'#ee5798');r(finis
 // pixel HUD with backing strip
 r(0,0,W,19,'#172a60');r(0,18,W,2,'#e6bc4d');text('AURORA',6,4,'#fff',9);text('♥'.repeat(health),71,4,'#ff698a',10);text('◉ '+String(money).padStart(2,'0'),126,4,'#ffe470',9);text(String(score).padStart(6,'0'),188,4,'#fff',9);text('1-'+level+(superUnlocked?' ★C':'')+(doubleJumpUnlocked?' ★Z':''),320,4,superUnlocked?'#ffe76b':'#e5f7ff',9)}
 function loop(now){if(mode!=='play')return;acc+=Math.min(50,now-last||16.67);last=now;let n=0;while(acc>=1000/60&&n++<4&&mode==='play'){step();acc-=1000/60}render();if(mode==='play')requestAnimationFrame(loop)}
-window.addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','Space','ArrowUp','ArrowDown','KeyZ','KeyC','Enter'].includes(e.code))e.preventDefault();if(e.code==='Enter'){if(!e.repeat){if(mode==='power')resumePower();else if(mode==='stage')resumeStage();else if(mode==='play'||mode==='pause')togglePause();else start()}return}if(e.code==='KeyR'&&(mode==='lost'||mode==='win')){start();return}keys[e.code]=true});window.addEventListener('keyup',e=>{keys[e.code]=false});window.addEventListener('blur',()=>{keys.ArrowLeft=keys.ArrowRight=keys.ArrowDown=keys.KeyC=keys.KeyZ=false;if(mode==='play')togglePause()});
-$('#play').addEventListener('click',()=>{if(mode==='power')resumePower();else if(mode==='stage')resumeStage();else if(mode==='pause')togglePause();else start()});$('#pause').addEventListener('click',()=>{if(mode==='play'||mode==='pause')togglePause()});$('#sound').addEventListener('click',()=>{sound=!sound;$('#sound').textContent=sound?'♫ SOM ON':'♫ SOM OFF';if(sound){resumeMusic();sfx(700,.06)}else pauseMusic()});
+window.addEventListener('keydown',e=>{
+ if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space','KeyZ','KeyC','Enter'].includes(e.code))e.preventDefault();
+ if(e.repeat)return;
+ if(mode==='intro'){if(e.code==='Enter'||e.code==='KeyZ'||e.code==='Space'||/^Key[A-Z]$/.test(e.code)||/^Digit[0-9]$/.test(e.code)||/^Numpad[0-9]$/.test(e.code)){goFromSplash();frontWaitRelease=true}return}
+ if(mode==='menu'){
+  if(frontWaitRelease)return;
+  if(frontScreen==='mainMenu'&&(e.code==='ArrowDown'||e.code==='ArrowUp')){menuIndex=(menuIndex+(e.code==='ArrowDown'?1:2))%3;updateMenuSelection();sfx(570,.045);return}
+  if(e.code==='KeyZ'){menuChoose();return}
+  return;
+ }
+ if(mode==='power'){if((level===1&&e.code==='KeyC')||(level===2&&(e.code==='KeyZ'||e.code==='ArrowUp'))){resumePower();frontWaitRelease=true}return}
+ if(mode==='stage'){return}
+ if(mode==='pause'){if(e.code==='Enter')togglePause();return}
+ if(mode==='win'||mode==='lost'){if(e.code==='KeyZ'||e.code==='Enter')showMenu();return}
+ if(mode==='play'&&e.code==='Enter'){togglePause();return}
+ if(mode==='play'&&e.code==='KeyR'){start();return}
+ if(mode==='play'&&!frontWaitRelease)keys[e.code]=true;
+});
+window.addEventListener('keyup',e=>{keys[e.code]=false;if(frontWaitRelease&&(e.code==='KeyZ'||e.code==='KeyC'||e.code==='ArrowUp'||e.code==='Enter'||mode==='menu'))frontWaitRelease=false});
+window.addEventListener('blur',()=>{keys.ArrowLeft=keys.ArrowRight=keys.ArrowUp=keys.KeyC=keys.KeyZ=false;spitKeyWasDown=false;chargeHeld=false;chargeTicks=0;keys.jumpLock=false;if(mode==='play')togglePause()});
+$('#play').addEventListener('click',()=>{if(mode==='power')resumePower();else if(mode==='stage')resumeStage();else if(mode==='pause')togglePause();else if(mode==='win'||mode==='lost')showMenu();else if(mode==='menu')menuChoose()});
+$('#pause').addEventListener('click',()=>{if(mode==='play'||mode==='pause')togglePause()});$('#sound').addEventListener('click',()=>{sound=!sound;$('#sound').textContent=sound?'♫ SOM ON':'♫ SOM OFF';if(sound){resumeMusic();sfx(700,.06)}else pauseMusic()});
 for(const b of document.querySelectorAll('[data-k]')){const code=b.dataset.k;b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);keys[code]=true});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,e=>{e.preventDefault();keys[code]=false})}
-build();render();})();
+const testParams=new URLSearchParams(location.search);
+const testLevel=testParams.get('testLevel');
+if(testLevel==='1'||testLevel==='2'){
+ level=Number(testLevel);build(true);
+ // Testes de fases podem começar com os poderes liberados para facilitar verificação.
+ superUnlocked=level===2;doubleJumpUnlocked=false;pacifier=null;
+ mode='play';front.classList.add('is-hidden');$('#overlay').style.display='none';
+ last=performance.now();requestAnimationFrame(loop);
+ document.querySelector('.small').textContent='MODO TESTE · FASE 1-'+level;
+}else{build();render();showFront('splash')}
+})();

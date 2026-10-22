@@ -1,0 +1,118 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Configurações — Super Aurora Cuspideira</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#101631;color:#fff4d6;font:15px Consolas,monospace}
+main{max-width:1080px;margin:auto;padding:24px 16px 55px}h1{font-size:clamp(21px,4vw,36px);color:#ffe168;text-shadow:3px 3px #8e4567}
+h2{font-size:18px;color:#9ee7ff;margin:0 0 16px}p{line-height:1.6;color:#c8d5ed}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0;align-items:center}
+button,a.action{display:inline-block;background:#ffe16a;color:#24203b;border:0;border-bottom:4px solid #ad7d35;padding:11px 15px;font:900 13px Consolas,monospace;text-decoration:none;cursor:pointer}
+button.secondary,a.action.secondary{background:#8ee7ff;border-color:#387eaa}button.danger{background:#ffc0bc;border-color:#b75858}
+section{background:#22234a;border:3px solid #525c95;padding:19px;margin:18px 0;box-shadow:5px 5px #0a1024}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:15px}
+.field{display:flex;flex-direction:column;gap:8px;background:#151b39;padding:12px;border:1px solid #515d86}
+.field label{font-weight:bold;font-size:13px}.field small{color:#aebcd7}.field input{width:100%;background:#f7f2dc;color:#17213b;border:2px solid #6d7da6;padding:8px;font:900 16px Consolas,monospace}
+#status{min-height:24px;color:#8cf0ba;font-weight:bold}#status.error{color:#ffaaa6}
+#fileInput{display:none}.note{border-left:4px solid #ffe16a;padding:9px 14px;background:#1b2647}
+@media(max-width:480px){main{padding:12px}section{padding:12px}}
+</style></head><body><main>
+<h1>⚙ CONFIGURAÇÕES DA AURORA</h1>
+<p>Ajuste os números do jogo sem modificar a lógica JavaScript. Salve, abra o jogo e recarregue a página para testar. Este painel é separado do editor de fases.</p>
+<div class="note">Os valores são salvos neste navegador. Para levar a configuração para outro computador ou navegador, use <b>EXPORTAR JSON</b> e depois <b>IMPORTAR JSON</b>. Em alguns navegadores, o armazenamento de páginas abertas diretamente por arquivo pode ser limitado; nesse caso, use um servidor local.</div>
+<div class="toolbar">
+<button id="save">💾 SALVAR ALTERAÇÕES</button>
+<button id="export" class="secondary">⬇ EXPORTAR JSON</button>
+<button id="import" class="secondary">⬆ IMPORTAR JSON</button>
+<button id="reset" class="danger">↺ RESTAURAR PADRÕES</button>
+<a class="action secondary" href="index.html">▶ ABRIR JOGO</a>
+<input type="file" id="fileInput" accept=".json,application/json">
+</div>
+<div id="status" role="status" aria-live="polite"></div>
+<div id="sections"></div>
+<p>Os controles do jogo continuam: setas para movimentar, Z ou ↑ para pular e C para cuspir. Nenhuma configuração de agachamento foi adicionada.</p>
+</main>
+<script src="js/config.js"></script>
+<script>
+(()=>{'use strict';
+const api=window.AURORA_CONFIG_API;
+const groups=[
+ ['player','Aurora — movimento e resistência',[
+ ['initialHearts','Corações iniciais','vidas'],['maxSpeed','Velocidade máxima','px/quadro'],
+ ['acceleration','Aceleração','px/quadro²'],['friction','Fricção','fator'],
+ ['jumpForce','Força do pulo','intensidade'],['doubleJumpForce','Força do pulo duplo','intensidade'],
+ ['gravity','Gravidade','px/quadro²'],['maxFallSpeed','Velocidade máxima de queda','px/quadro'],
+ ['coyoteFrames','Tolerância ao sair da borda','quadros'],['invulnerabilityFrames','Invulnerabilidade após dano','quadros']]],
+ ['normalSpit','Cuspe normal',[
+ ['maxEnemies','Inimigos por disparo','quantidade'],['maxBlocks','Blocos por disparo','quantidade'],
+ ['enemyDamage','Dano aos inimigos','pontos de vida'],['blockDamage','Dano aos blocos','pontos de vida'],
+ ['bossDamage','Dano ao chefe','pontos de vida'],['cooldownFrames','Intervalo entre disparos','quadros']]],
+ ['superSpit','Super Cuspe',[
+ ['maxEnemies','Inimigos por disparo','quantidade'],['maxBlocks','Blocos por disparo','quantidade'],
+ ['enemyDamage','Dano aos inimigos','pontos de vida'],['bossDamage','Dano ao chefe','pontos de vida'],
+ ['chargeFrames','Tempo necessário para carregar','quadros a 60 FPS'],
+ ['chargeMaxFrames','Limite do medidor de carga','quadros a 60 FPS'],
+ ['cooldownFrames','Intervalo entre disparos','quadros']]],
+ ['boss','Super Sapo Rei',[['health','Vida do chefe','pontos de vida']]],
+ ['transitions','Transições',[['victoryDelayMs','Duração da tela FASE CONCLUÍDA','milissegundos']]],
+ ['rewards','Pontuação e recompensas',[
+ ['coinPoints','Pontos por moeda','pontos'],['blockPoints','Pontos por bloco','pontos'],
+ ['enemyPoints','Pontos por inimigo','pontos'],['bossPoints','Pontos pelo chefe','pontos'],
+ ['stagePoints','Pontos por fase','pontos'],['allCoinsPoints','Bônus por todas as moedas','pontos'],
+ ['allCoinsHearts','Corações extras por todas as moedas','corações']]]
+];
+const sections=document.querySelector('#sections');
+let current=JSON.parse(JSON.stringify(window.AURORA_CONFIG));
+function draw(){
+ sections.replaceChildren();
+ for(const [group,title,fields] of groups){
+  const sec=document.createElement('section'),h=document.createElement('h2'),wrap=document.createElement('div');
+  h.textContent=title;wrap.className='fields';
+  for(const [key,label,unit] of fields){
+   const [min,max,step]=api.ranges[group+'.'+key],id=group+'-'+key;
+   const field=document.createElement('div'),lbl=document.createElement('label'),input=document.createElement('input'),help=document.createElement('small');
+   field.className='field';lbl.htmlFor=id;lbl.textContent=label;
+   input.type='number';input.id=id;input.dataset.group=group;input.dataset.key=key;
+   input.min=min;input.max=max;input.step=step;input.value=current[group][key];
+   help.textContent=unit+' · mínimo '+min+' · máximo '+max;
+   field.append(lbl,input,help);wrap.append(field);
+  }
+  sec.append(h,wrap);sections.append(sec);
+ }
+}
+function collect(){
+ const next=JSON.parse(JSON.stringify(current));
+ for(const input of document.querySelectorAll('input[data-group]')){
+  const v=input.value.trim();if(v==='')throw Error('Preencha todos os campos.');
+  const n=Number(v),path=input.dataset.group+'.'+input.dataset.key;
+  const [min,max]=api.ranges[path];
+  if(!Number.isFinite(n)||n<min||n>max)throw Error('Valor fora dos limites: '+path);
+  next[input.dataset.group][input.dataset.key]=n;
+ }
+ if(next.superSpit.chargeMaxFrames<next.superSpit.chargeFrames)
+  throw Error('O limite da carga não pode ser menor que o tempo de carregamento.');
+ return api.sanitize(next);
+}
+function status(message,error=false){const el=document.querySelector('#status');el.textContent=message;el.classList.toggle('error',error)}
+document.querySelector('#save').onclick=()=>{
+ try{current=collect();localStorage.setItem(api.storageKey,JSON.stringify(current));status('Configurações salvas! Abra ou recarregue index.html para aplicar.');draw()}
+ catch(e){status('Não foi possível salvar: '+e.message,true)}
+};
+document.querySelector('#export').onclick=()=>{
+ try{const data=collect();const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+ const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='aurora-config.json';a.click();
+ setTimeout(()=>URL.revokeObjectURL(url),2000);status('JSON exportado.')}
+ catch(e){status(e.message,true)}
+};
+document.querySelector('#import').onclick=()=>document.querySelector('#fileInput').click();
+document.querySelector('#fileInput').onchange=async e=>{
+ const f=e.target.files[0];if(!f)return;
+ try{const data=JSON.parse(await f.text());if(!data||typeof data!=='object'||!data.player||!data.superSpit)throw Error('JSON de configuração inválido.');
+ current=api.sanitize(data);draw();status('JSON importado. Clique em SALVAR ALTERAÇÕES para aplicar.')}
+ catch(err){status('Falha na importação: '+err.message,true)}finally{e.target.value=''}
+};
+document.querySelector('#reset').onclick=()=>{
+ if(!confirm('Restaurar todos os parâmetros aos valores originais?'))return;
+ current=JSON.parse(JSON.stringify(api.defaults));draw();status('Valores padrão restaurados no painel. Clique em SALVAR ALTERAÇÕES para aplicar.');
+};
+draw();
+})();
+</script></body></html>

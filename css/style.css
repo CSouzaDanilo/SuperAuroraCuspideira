@@ -1,2 +1,35 @@
 
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#101631;color:#fff8db;font-family:Consolas,monospace}body{display:grid;place-items:center;padding:16px}.wrap{width:min(1100px,100%)}header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}h1{margin:0 0 12px;font-size:clamp(19px,3vw,30px);color:#ffe269;text-shadow:3px 3px #9b396a}.small{font-size:12px;color:#a9e9ff}.frame{position:relative;border:5px solid #f9cf54;box-shadow:0 0 0 5px #63448b,0 15px 30px #0008;background:#77bff0}canvas{display:block;width:100%;height:auto;aspect-ratio:16/9;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none}.overlay{position:absolute;inset:0;display:grid;place-items:center;background:#141129c9;text-align:center;padding:14px}.panel{background:#31245c;border:4px solid #ffdd70;box-shadow:7px 7px #140e2b;padding:clamp(12px,3vw,25px);max-width:580px}.panel h2{font-size:clamp(24px,4.8vw,43px);line-height:1.05;color:#ffdc60;text-shadow:3px 3px #ad4d3e;margin:5px 0 14px}.panel p{line-height:1.5}button{font:900 14px Consolas,monospace;background:#ffe16a;color:#231736;border:0;border-bottom:4px solid #ba7b3b;padding:12px 17px;cursor:pointer;margin:4px}button:hover{filter:brightness(1.08)}.controls{display:flex;justify-content:space-between;gap:10px;margin-top:15px}.controls>div{display:flex;gap:8px}.controls button{min-width:64px;min-height:54px;font-size:19px;background:#8be8ff;touch-action:none;user-select:none}.hint{font-size:12px;color:#c6c5e7;line-height:1.8}.status{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:12px;font-size:12px}@media(min-width:900px){.controls{display:none}}@media(max-width:520px){body{padding:7px}.controls button{min-width:46px;min-height:48px}.hint{font-size:10px}}
+
+/* V26: front-end pixel art, separate from the gameplay overlay. */
+.front{position:absolute;inset:0;z-index:5;overflow:hidden;image-rendering:pixelated;background:#1589e8}
+.front.is-hidden{display:none}
+.front-scene{position:absolute;inset:0;background:url('../assets/backgrounds/menu-ilha.png') center/100% 100% no-repeat;image-rendering:pixelated}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;opacity:0;visibility:hidden;transition:opacity .4s ease,visibility .4s ease;padding:12px;pointer-events:none}
+.screen.active{opacity:1;visibility:visible;pointer-events:auto}
+.logo-group{position:relative;display:flex;align-items:center;justify-content:center;gap:3px;transform:translateY(-14px)}
+.game-logo{margin:0;display:flex;flex-direction:column;align-items:center;transform:rotate(-3deg);font-family:Impact,'Arial Black',sans-serif;font-weight:1000;letter-spacing:1px;line-height:.88;color:#ffdb33;-webkit-text-stroke:1.8px #211824;text-shadow:3px 4px #11151e,5px 6px #13151d,7px 8px #0e0f13;filter:drop-shadow(0 3px 0 #2b2016)}
+.game-logo span:nth-child(1){font-size:clamp(20px,4.3vw,48px)}
+.game-logo span:nth-child(2){font-size:clamp(30px,6.3vw,75px)}
+.game-logo span:nth-child(3){font-size:clamp(21px,4.4vw,52px)}
+.aurora-title{width:clamp(48px,11vw,115px);height:clamp(68px,14vw,145px);object-fit:contain;image-rendering:pixelated;filter:drop-shadow(4px 5px 0 #151625);animation:float-aurora 1.7s steps(3,end) infinite alternate}
+.press-pulse{position:absolute;bottom:7%;font:900 clamp(10px,1.8vw,18px) Consolas,monospace;letter-spacing:3px;color:#fff5b6;text-shadow:2px 3px #15132d;animation:pulse-press 1.3s ease-in-out infinite}
+@keyframes pulse-press{50%{opacity:.42;transform:scale(1.06)}}@keyframes float-aurora{to{transform:translateY(-5px)}}
+.menu-heading{font:1000 clamp(17px,3.7vw,43px)/.98 Impact,'Arial Black',sans-serif;color:#ffe44a;-webkit-text-stroke:1px #1d1c25;text-shadow:3px 4px #181828;margin:0 0 12px}
+#menuOptions{display:flex;flex-direction:column;gap:5px;align-items:stretch;width:min(80%,370px)}
+.menu-option{font:900 clamp(11px,1.9vw,21px) Consolas,monospace;color:#fff9e0;text-shadow:2px 2px #151c32;background:#1c2c67cc;border:2px solid #a5caff;padding:5px 14px;white-space:nowrap}
+.menu-option.selected{color:#271d33;background:#ffdb59;border-color:#fff5b8;text-shadow:none;box-shadow:3px 3px #242144}
+.menu-option.selected::before{content:'▶ ';color:#e85a56}
+.menu-footer{font:900 clamp(9px,1.3vw,14px) Consolas,monospace;color:#fff5bb;text-shadow:2px 2px #17204d;margin:12px 0 0}
+.pixel-window{width:min(94%,480px);max-height:95%;overflow:auto;background:#272257f0;border:4px solid #ffdf69;box-shadow:5px 5px #14122c;color:#fff4df;padding:clamp(9px,2vw,22px)}
+.pixel-window h2{font:900 clamp(14px,2.8vw,29px) Consolas,monospace;color:#ffdd68;margin:0 0 12px;text-shadow:2px 2px #a24752}
+.pixel-window p{font:900 clamp(10px,1.7vw,17px) Consolas,monospace;margin:6px 0;line-height:1.5}
+.pixel-window .smaller{font-size:clamp(8px,1.2vw,12px);color:#b7edff;margin-top:12px}
+.pixel-window .credits-copy{font-size:clamp(10px,1.5vw,16px);font-weight:normal}
+.return-option{display:inline-block;margin-top:11px;background:#ffdf69;color:#27204b;padding:7px 18px;font:900 clamp(11px,1.5vw,17px) Consolas,monospace}
+@media(max-width:520px){.game-logo{-webkit-text-stroke:1px #211824;text-shadow:2px 3px #11151e,4px 5px #13151d}.logo-group{transform:translateY(-6px)}.pixel-window{border-width:2px}}
+
+/* Conclusão limpa: somente o título, sem texto auxiliar ou botões. */
+.overlay.stage-complete .panel #message,.overlay.stage-complete .panel #sub,.overlay.stage-complete .panel #play,.overlay.stage-complete .panel #sound{display:none!important}
+.overlay.stage-complete .panel{padding:26px 32px}
+.overlay.stage-complete .panel h2{margin:0}
