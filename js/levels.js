@@ -1,8 +1,9 @@
 /* Dados compartilhados pelo jogo e editor visual. Fases independentes. */
 (function(){'use strict';
-const STORAGE='aurora-levels-v27',W=3552,H=216,GROUND=188;
-const kinds=['barata','joaninha','caramujo','sapo','lesma','besouro','caranguejo'];
+const STORAGE='aurora-levels-v27',W=3552,H=216,GROUND=188,MAX_LEVEL=6;
+const kinds=['barata','joaninha','caramujo','sapo','lesma','besouro','caranguejo','ratinho','planta'];
 function createDefault(level){
+ if(!Number.isInteger(level)||level<1||level>MAX_LEVEL)throw Error('Fase inválida: '+level);
 let blocks=[],ledges=[],enemies=[],coins=[],holes=[],market=[],boss=null,pacifier=null,shoe=null;
 const ground=GROUND;
 // Caixas decorativas removidas para nao confundir com os blocos interativos.
@@ -39,47 +40,84 @@ coins.splice(-2,2);
 coins=coins.filter(c=>c.x<1830||c.x>1880);
 // Chupeta sobre uma plataforma na metade da fase, somente se ainda nao coletada.
 ledges.push({x:1720,y:134,w:78,h:8});
-pacifier={x:1751,y:110,w:22,h:22};
+pacifier={x:490,y:142,w:22,h:22};
 shoe={x:1750,y:109,w:24,h:23};
 // Chefe da terceira parte, antes da faixa de chegada.
 boss={x:3340,y:ground-53,w:55,h:53,dir:-1,hp:8,maxHp:8,hit:0,alive:true,phase:0,vy:0,grounded:true,jumpWait:35};
 
-const map={version:1,id:'1-'+level,width:W,ground:GROUND,start:{x:32,y:135},finish:3470,
- blocks,platforms:ledges,enemies,coins,holes,boss,
- items:level===1?{pacifier,shoe:null}:{pacifier:null,shoe}};
+const map={version:2,id:'1-'+level,width:W,ground:GROUND,start:{x:32,y:135},finish:3470,
+ blocks,platforms:ledges,enemies,coins,holes,boss,spikes:[],springs:[],
+ items:level===1?{pacifier,shoe:null,cube:null}:level===2?{pacifier:null,shoe,cube:null}:{pacifier:null,shoe:null,cube:null}};
 return map;
 }
 function clone(o){return JSON.parse(JSON.stringify(o))}
 function validNum(v,min,max){return typeof v==='number'&&Number.isFinite(v)&&v>=min&&v<=max}
 function sanitize(raw,level){
+ if(!Number.isInteger(level)||level<1||level>MAX_LEVEL)throw Error('Fase inválida');
  if(!raw||typeof raw!=='object')throw Error('Mapa inválido');
  const out=createDefault(level);out.id='1-'+level;
  if(validNum(raw.width,768,15000))out.width=Math.round(raw.width);
  if(validNum(raw.ground,80,216))out.ground=Math.round(raw.ground);
  const clean=(arr,max,fn)=>Array.isArray(arr)?arr.slice(0,max).filter(x=>x&&typeof x==='object').map(fn).filter(Boolean):null;
  const pos=(x)=>validNum(x,-200,15000);
- const blocks=clean(raw.blocks,2000,b=>pos(b.x)&&pos(b.y)?{x:b.x,y:b.y,w:16,h:16,type:[0,1,2].includes(b.type)?b.type:0,hp:validNum(b.hp,1,20)?b.hp:1,alive:true}:null);
+ const blocks=clean(raw.blocks,2000,b=>pos(b.x)&&pos(b.y)?{x:b.x,y:b.y,w:16,h:16,type:[0,1,2,3].includes(b.type)?b.type:0,hp:validNum(b.hp,1,20)?b.hp:1,alive:true}:null);
  if(blocks)out.blocks=blocks;
- const platforms=clean(raw.platforms,400,b=>pos(b.x)&&pos(b.y)&&validNum(b.w,8,1200)?{x:b.x,y:b.y,w:b.w,h:validNum(b.h,2,100)?b.h:8}:null);
+ const platforms=clean(raw.platforms,400,b=>pos(b.x)&&pos(b.y)&&validNum(b.w,8,1200)?{
+ x:b.x,y:b.y,w:b.w,h:validNum(b.h,2,100)?b.h:8,
+ kind:['static','horizontal','vertical'].includes(b.kind)?b.kind:'static',
+ range:validNum(b.range,0,800)?b.range:96,speed:validNum(b.speed,0.1,6)?b.speed:0.8,
+ originX:b.x,originY:b.y,dir:1
+}:null);
  if(platforms)out.platforms=platforms;
  const coins=clean(raw.coins,1500,c=>pos(c.x)&&pos(c.y)?{x:c.x,y:c.y,got:false}:null);
  if(coins)out.coins=coins;
- const enemies=clean(raw.enemies,400,e=>pos(e.x)&&pos(e.y)&&kinds.includes(e.kind)?{x:e.x,y:e.y,w:19,h:16,baseY:e.y,kind:e.kind,dir:e.dir===1?1:-1,hp:validNum(e.hp,1,20)?e.hp:1,phase:0,alive:true,hit:0}:null);
+ const enemies=clean(raw.enemies,400,e=>pos(e.x)&&pos(e.y)&&kinds.includes(e.kind)?{x:e.x,y:e.y,w:e.kind==='planta'?24:19,h:e.kind==='planta'?30:16,baseY:e.y,kind:e.kind,dir:e.dir===1?1:-1,hp:validNum(e.hp,1,20)?e.hp:1,phase:0,alive:true,hit:0}:null);
  if(enemies)out.enemies=enemies;
  const holes=clean(raw.holes,80,h=>pos(h.x)&&validNum(h.w,16,800)?{x:h.x,w:h.w}:null);
  if(holes)out.holes=holes;
+ const spikes=clean(raw.spikes,300,a=>pos(a.x)&&pos(a.y)&&validNum(a.w,16,800)?{x:a.x,y:a.y,w:a.w,h:12}:null);
+ if(spikes)out.spikes=spikes;
+ const springs=clean(raw.springs,200,a=>pos(a.x)&&pos(a.y)?{x:a.x,y:a.y,w:20,h:12,force:validNum(a.force,5,20)?a.force:10.5}:null);
+ if(springs)out.springs=springs;
  if(raw.start&&pos(raw.start.x)&&pos(raw.start.y))out.start={x:raw.start.x,y:raw.start.y};
  if(validNum(raw.finish,0,out.width))out.finish=raw.finish;
  if(raw.items&&typeof raw.items==='object'){
-  for(const name of ['pacifier','shoe']){
-   const item=raw.items[name];out.items[name]=item&&pos(item.x)&&pos(item.y)?{x:item.x,y:item.y,w:name==='shoe'?24:22,h:name==='shoe'?23:22}:null;
+  for(const name of ['pacifier','shoe','cube']){
+   const item=raw.items[name];out.items[name]=item&&pos(item.x)&&pos(item.y)?{x:item.x,y:item.y,w:name==='shoe'?24:name==='cube'?22:22,h:name==='shoe'?23:name==='cube'?22:22}:null;
   }
  }
  if(raw.boss===null)out.boss=null;
  else if(raw.boss&&pos(raw.boss.x)&&pos(raw.boss.y))out.boss={...out.boss,x:raw.boss.x,y:raw.boss.y};
  return out;
 }
-function load(level){let raw=null;try{const all=JSON.parse(localStorage.getItem(STORAGE)||'{}');raw=all['1-'+level]}catch(e){}return raw?sanitize(raw,level):createDefault(level)}
+// V28.2: arquivos JSON versionados no GitHub são a fonte oficial.
+// Rascunhos do navegador só prevalecem no editor e no modo de teste.
+const published=new Map();
+async function preloadAll(){
+ await Promise.all(Array.from({length:MAX_LEVEL},async(_,i)=>{
+  const n=i+1;
+  try{
+   const response=await fetch('fases/fase-1-'+n+'.json',{cache:'no-cache'});
+   if(!response.ok)throw Error('HTTP '+response.status);
+   const raw=await response.json();
+   if(raw.id&&raw.id!=='1-'+n)throw Error('ID incompatível: '+raw.id);
+   published.set(n,sanitize(raw,n));
+  }catch(err){console.warn('Fase 1-'+n+': JSON indisponível; usando mapa padrão.',err.message)}
+ }));
+}
+function draft(level){
+ try{const all=JSON.parse(localStorage.getItem(STORAGE)||'{}');return all['1-'+level]||null}catch(e){return null}
+}
+function load(level,options={}){
+ const raw=options.draftFirst?draft(level)||published.get(level):published.get(level)||draft(level);
+ if(!raw)return createDefault(level);
+ const result=sanitize(raw,level);
+ // Compatibilidade com mapas antigos da 1-1 sem a Super Chupeta.
+ if(level===1&&!result.items.pacifier&&options.draftFirst&&draft(level))result.items.pacifier={x:490,y:142,w:22,h:22};
+ return result;
+}
+function hasDraft(level){return !!draft(level)}
+function hasPublished(level){return published.has(level)}
 function save(level,map){const all=JSON.parse(localStorage.getItem(STORAGE)||'{}');all['1-'+level]=sanitize(map,level);localStorage.setItem(STORAGE,JSON.stringify(all));}
-window.AURORA_LEVELS={createDefault,load,save,sanitize,clone,STORAGE,kinds};
+window.AURORA_LEVELS={createDefault,load,save,sanitize,clone,preloadAll,hasDraft,hasPublished,STORAGE,kinds,MAX_LEVEL};
 })();

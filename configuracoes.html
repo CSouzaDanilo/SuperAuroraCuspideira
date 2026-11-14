@@ -12,7 +12,7 @@ section{background:#22234a;border:3px solid #525c95;padding:19px;margin:18px 0;b
 .field{display:flex;flex-direction:column;gap:8px;background:#151b39;padding:12px;border:1px solid #515d86}
 .field label{font-weight:bold;font-size:13px}.field small{color:#aebcd7}.field input{width:100%;background:#f7f2dc;color:#17213b;border:2px solid #6d7da6;padding:8px;font:900 16px Consolas,monospace}
 #status{min-height:24px;color:#8cf0ba;font-weight:bold}#status.error{color:#ffaaa6}
-#fileInput{display:none}.note{border-left:4px solid #ffe16a;padding:9px 14px;background:#1b2647}
+#creditsText{display:block;width:100%;min-height:330px;resize:vertical;background:#f7f2dc;color:#17213b;border:2px solid #6d7da6;padding:14px;font:14px/1.55 Consolas,monospace;white-space:pre-wrap}#fileInput{display:none}.note{border-left:4px solid #ffe16a;padding:9px 14px;background:#1b2647}
 @media(max-width:480px){main{padding:12px}section{padding:12px}}
 </style></head><body><main>
 <h1>⚙ CONFIGURAÇÕES DA AURORA</h1>
@@ -28,9 +28,12 @@ section{background:#22234a;border:3px solid #525c95;padding:19px;margin:18px 0;b
 </div>
 <div id="status" role="status" aria-live="polite"></div>
 <div id="sections"></div>
+<section id="audioSettings"><h2>🔊 ÁUDIO</h2><p>Configure os volumes das músicas e dos efeitos. Os arquivos de áudio serão integrados aos poucos, após a etapa de level design.</p><label for="audioMuted"><input type="checkbox" id="audioMuted"> Silenciar todo o jogo</label><p>As alterações são aplicadas ao recarregar o jogo após salvar.</p></section>
+<section id="creditsSettings"><h2>🎬 Créditos finais — após a fase 1-6</h2><p>Edite o texto abaixo. As quebras de linha serão preservadas na tela de créditos. Clique em SALVAR ALTERAÇÕES para aplicar. A música própria poderá ser incluída depois em <code>assets/audio/creditos.mp3</code>.</p><label for="creditsText">Texto completo dos créditos</label><textarea id="creditsText" spellcheck="false"></textarea><p><button type="button" id="resetCredits" class="secondary">↺ RESTAURAR TEXTO PADRÃO</button></p></section>
 <p>Os controles do jogo continuam: setas para movimentar, Z ou ↑ para pular e C para cuspir. Nenhuma configuração de agachamento foi adicionada.</p>
 </main>
 <script src="js/config.js"></script>
+<script src="js/credits.js"></script>
 <script>
 (()=>{'use strict';
 const api=window.AURORA_CONFIG_API;
@@ -51,6 +54,7 @@ const groups=[
  ['chargeFrames','Tempo necessário para carregar','quadros a 60 FPS'],
  ['chargeMaxFrames','Limite do medidor de carga','quadros a 60 FPS'],
  ['cooldownFrames','Intervalo entre disparos','quadros']]],
+ ['audio','ÁUDIO — volumes', [['musicVolume','Volume das músicas','%'],['effectsVolume','Volume dos efeitos','%']]],
  ['boss','Super Sapo Rei',[['health','Vida do chefe','pontos de vida']]],
  ['transitions','Transições',[['victoryDelayMs','Duração da tela FASE CONCLUÍDA','milissegundos']]],
  ['rewards','Pontuação e recompensas',[
@@ -61,6 +65,8 @@ const groups=[
 ];
 const sections=document.querySelector('#sections');
 let current=JSON.parse(JSON.stringify(window.AURORA_CONFIG));
+const muteField=document.querySelector('#audioMuted');muteField.checked=current.audio.muted;
+const creditsField=document.querySelector('#creditsText');creditsField.value=window.AURORA_CREDITS.load();
 function draw(){
  sections.replaceChildren();
  for(const [group,title,fields] of groups){
@@ -89,15 +95,16 @@ function collect(){
  }
  if(next.superSpit.chargeMaxFrames<next.superSpit.chargeFrames)
   throw Error('O limite da carga não pode ser menor que o tempo de carregamento.');
+ next.audio.muted=muteField.checked;
  return api.sanitize(next);
 }
 function status(message,error=false){const el=document.querySelector('#status');el.textContent=message;el.classList.toggle('error',error)}
 document.querySelector('#save').onclick=()=>{
- try{current=collect();localStorage.setItem(api.storageKey,JSON.stringify(current));status('Configurações salvas! Abra ou recarregue index.html para aplicar.');draw()}
+ try{current=collect();localStorage.setItem(api.storageKey,JSON.stringify(current));window.AURORA_CREDITS.save(creditsField.value);status('Configurações salvas! Abra ou recarregue index.html para aplicar.');draw()}
  catch(e){status('Não foi possível salvar: '+e.message,true)}
 };
 document.querySelector('#export').onclick=()=>{
- try{const data=collect();const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+ try{const data=collect();data.creditsText=creditsField.value;const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='aurora-config.json';a.click();
  setTimeout(()=>URL.revokeObjectURL(url),2000);status('JSON exportado.')}
  catch(e){status(e.message,true)}
@@ -106,13 +113,14 @@ document.querySelector('#import').onclick=()=>document.querySelector('#fileInput
 document.querySelector('#fileInput').onchange=async e=>{
  const f=e.target.files[0];if(!f)return;
  try{const data=JSON.parse(await f.text());if(!data||typeof data!=='object'||!data.player||!data.superSpit)throw Error('JSON de configuração inválido.');
- current=api.sanitize(data);draw();status('JSON importado. Clique em SALVAR ALTERAÇÕES para aplicar.')}
+ current=api.sanitize(data);muteField.checked=current.audio.muted;if(typeof data.creditsText==='string')creditsField.value=data.creditsText;draw();status('JSON importado. Clique em SALVAR ALTERAÇÕES para aplicar.')}
  catch(err){status('Falha na importação: '+err.message,true)}finally{e.target.value=''}
 };
 document.querySelector('#reset').onclick=()=>{
  if(!confirm('Restaurar todos os parâmetros aos valores originais?'))return;
- current=JSON.parse(JSON.stringify(api.defaults));draw();status('Valores padrão restaurados no painel. Clique em SALVAR ALTERAÇÕES para aplicar.');
+ current=JSON.parse(JSON.stringify(api.defaults));muteField.checked=current.audio.muted;creditsField.value=window.AURORA_CREDITS.defaultText;draw();status('Valores padrão restaurados no painel. Clique em SALVAR ALTERAÇÕES para aplicar.');
 };
+document.querySelector('#resetCredits').onclick=()=>{creditsField.value=window.AURORA_CREDITS.defaultText;status('Texto padrão restaurado no painel. Clique em SALVAR ALTERAÇÕES para aplicar.')};
 draw();
 })();
 </script></body></html>

@@ -2,20 +2,20 @@
 const $=s=>document.querySelector(s),api=window.AURORA_LEVELS;
 const canvas=$('#map'),g=canvas.getContext('2d');g.imageSmoothingEnabled=false;
 const bg=new Image();bg.src='assets/backgrounds/feira-de-rua.png';bg.onload=draw;
-let level=1,data=api.load(level),selected=null,drag=null,history=[],future=[],offset=0;
-const categories={blocks:'Blocos',platforms:'Plataformas',coins:'Moedas',enemies:'Inimigos',holes:'Buracos',items:'Itens',boss:'Chefe',start:'Início',finish:'Final'};
+let level=1,data=api.load(level,{draftFirst:true}),selected=null,drag=null,history=[],future=[],offset=0;
+const categories={blocks:'Blocos',platforms:'Plataformas',coins:'Moedas',enemies:'Inimigos',holes:'Buracos',spikes:'Espinhos',springs:'Molas',items:'Itens',boss:'Chefe',start:'Início',finish:'Final'};
 const visible=Object.fromEntries(Object.keys(categories).map(k=>[k,true]));
-const colors={blocks:'#a85f39',platforms:'#e2a663',coins:'#ffe447',enemies:'#f75d76',holes:'#0c1126',items:'#7de3fa',boss:'#7ddd75',start:'#e8f5ff',finish:'#fa76c3'};
+const colors={blocks:'#a85f39',platforms:'#e2a663',coins:'#ffe447',enemies:'#f75d76',holes:'#0c1126',spikes:'#e7eef4',springs:'#f1c946',items:'#7de3fa',boss:'#7ddd75',start:'#e8f5ff',finish:'#fa76c3'};
 const clone=api.clone;
 function setStatus(msg){$('#status').textContent=msg}
 function snapshot(){history.push(clone(data));if(history.length>80)history.shift();future=[]}
 function restore(stack,to){if(!stack.length)return;to.push(clone(data));data=stack.pop();selected=null;renderAll()}
 function objects(){
  const a=[];
- for(const [type,key] of [['blocks','blocks'],['platforms','platforms'],['coins','coins'],['enemies','enemies'],['holes','holes']]){
+ for(const [type,key] of [['blocks','blocks'],['platforms','platforms'],['coins','coins'],['enemies','enemies'],['holes','holes'],['spikes','spikes'],['springs','springs']]){
   data[key].forEach((obj,i)=>a.push({type,key,index:i,obj}));
  }
- for(const type of ['pacifier','shoe'])if(data.items[type])a.push({type:'items',key:type,index:0,obj:data.items[type]});
+ for(const type of ['pacifier','shoe','cube'])if(data.items[type])a.push({type:'items',key:type,index:0,obj:data.items[type]});
  if(data.boss)a.push({type:'boss',key:'boss',index:0,obj:data.boss});
  a.push({type:'start',key:'start',index:0,obj:data.start});
  a.push({type:'finish',key:'finish',index:0,obj:{x:data.finish,y:0,w:5,h:data.ground}});
@@ -25,7 +25,8 @@ function dims(it){
  const o=it.obj;
  if(it.type==='blocks')return [16,16];
  if(it.type==='coins')return [10,12];
- if(it.type==='enemies')return [19,16];
+ if(it.type==='spikes'||it.type==='springs')return [o.w,o.h];
+ if(it.type==='enemies')return [o.w||19,o.h||16];
  if(it.type==='holes')return [o.w,216-data.ground+8];
  if(it.type==='start')return [17,29];
  if(it.type==='finish')return [8,50];
@@ -57,23 +58,26 @@ function move(it,x,y){
  o.x=Math.max(0,Math.min(data.width-8,snap(x)));
  if(it.type!=='holes')o.y=Math.max(-64,Math.min(216,snap(y)));
  if(it.type==='enemies')o.baseY=o.y;
+ if(it.type==='platforms'){o.originX=o.x;o.originY=o.y;}
 }
 function remove(it){
  if(!it||it.type==='start'||it.type==='finish')return;
  snapshot();
- if(['blocks','platforms','coins','enemies','holes'].includes(it.type))data[it.key].splice(it.index,1);
+ if(['blocks','platforms','coins','enemies','holes','spikes','springs'].includes(it.type))data[it.key].splice(it.index,1);
  else if(it.type==='items')data.items[it.key]=null;
  else if(it.type==='boss')data.boss=null;
  selected=null;renderAll();
 }
 function create(tool,x,y){
  snapshot();let it=null;const X=snap(x),Y=snap(y);
- if(tool==='block'){data.blocks.push({x:X,y:Y,w:16,h:16,type:0,hp:1,alive:true});it={type:'blocks',key:'blocks',index:data.blocks.length-1}}
+ if(tool==='block'||tool==='metal'){data.blocks.push({x:X,y:Y,w:16,h:16,type:tool==='metal'?3:0,hp:tool==='metal'?20:1,alive:true});it={type:'blocks',key:'blocks',index:data.blocks.length-1}}
  if(tool==='coin'){data.coins.push({x:X,y:Y,got:false});it={type:'coins',key:'coins',index:data.coins.length-1}}
- if(tool==='enemy'){const kind=$('#enemyKind').value;data.enemies.push({x:X,y:Y,w:19,h:16,baseY:Y,kind,dir:-1,hp:kind==='besouro'?3:kind==='caranguejo'?2:1,phase:0,alive:true,hit:0});it={type:'enemies',key:'enemies',index:data.enemies.length-1}}
- if(tool==='platform'){data.platforms.push({x:X,y:Y,w:80,h:8});it={type:'platforms',key:'platforms',index:data.platforms.length-1}}
+ if(tool==='enemy'){const kind=$('#enemyKind').value;data.enemies.push({x:X,y:Y,w:kind==='planta'?24:19,h:kind==='planta'?30:16,baseY:Y,kind,dir:-1,hp:kind==='planta'?2:kind==='besouro'?3:kind==='caranguejo'?2:1,phase:0,alive:true,hit:0});it={type:'enemies',key:'enemies',index:data.enemies.length-1}}
+ if(['platform','horizontal','vertical'].includes(tool)){data.platforms.push({x:X,y:Y,w:80,h:8,kind:tool==='platform'?'static':tool,range:96,speed:0.8,originX:X,originY:Y,dir:1});it={type:'platforms',key:'platforms',index:data.platforms.length-1}}
+ if(tool==='spikes'){data.spikes.push({x:X,y:Y,w:48,h:12});it={type:'spikes',key:'spikes',index:data.spikes.length-1}}
+ if(tool==='spring'){data.springs.push({x:X,y:Y,w:20,h:12,force:10.5});it={type:'springs',key:'springs',index:data.springs.length-1}}
  if(tool==='hole'){data.holes.push({x:X,w:64});it={type:'holes',key:'holes',index:data.holes.length-1}}
- if(tool==='pacifier'||tool==='shoe'){data.items[tool]={x:X,y:Y,w:tool==='shoe'?24:22,h:tool==='shoe'?23:22};it={type:'items',key:tool,index:0}}
+ if(tool==='pacifier'||tool==='shoe'||tool==='cube'){data.items[tool]={x:X,y:Y,w:tool==='shoe'?24:22,h:tool==='shoe'?23:22};it={type:'items',key:tool,index:0}}
  if(tool==='boss'){data.boss={x:X,y:Y,w:55,h:53,hp:8,maxHp:8,alive:true};it={type:'boss',key:'boss',index:0}}
  if(tool==='start'){data.start={x:X,y:Y};it={type:'start',key:'start',index:0}}
  if(tool==='finish'){data.finish=X;it={type:'finish',key:'finish',index:0}}
@@ -104,9 +108,20 @@ function draw(){
   if(!visible[it.type]||it.type==='holes')continue;
   const p=pos(it),[w,h]=dims(it);if(p.x+w<offset||p.x>offset+vw)continue;
   g.fillStyle=colors[it.type];g.strokeStyle='#17233e';g.lineWidth=1;
-  if(it.type==='coins'){g.beginPath();g.ellipse(p.x+5,p.y+6,4,6,0,0,Math.PI*2);g.fill();g.stroke()}
+  if(it.type==='blocks'&&it.obj.type===3){g.fillStyle='#748aa3';g.fillRect(p.x,p.y,w,h);g.fillStyle='#e2e9f3';g.fillRect(p.x+2,p.y+2,3,3);g.fillRect(p.x+w-5,p.y+h-5,3,3)}
+  else if(it.type==='spikes'){g.fillStyle='#dce5f0';for(let x=p.x;x<p.x+w;x+=8){g.beginPath();g.moveTo(x,p.y+h);g.lineTo(x+4,p.y);g.lineTo(x+8,p.y+h);g.fill()}}
+  else if(it.type==='springs'){g.fillStyle='#eec74a';g.fillRect(p.x,p.y,w,4);g.fillStyle='#d94b66';g.fillRect(p.x+2,p.y+4,w-4,h-4)}
+  else if(it.type==='coins'){g.beginPath();g.ellipse(p.x+5,p.y+6,4,6,0,0,Math.PI*2);g.fill();g.stroke()}
   else if(it.type==='enemies'){g.fillRect(p.x,p.y,w,h);g.strokeRect(p.x,p.y,w,h);g.fillStyle='#ffffff';g.font='7px monospace';g.fillText(it.obj.kind.slice(0,3),p.x+1,p.y+10)}
-  else if(it.type==='items'){g.fillRect(p.x,p.y,w,h);g.strokeRect(p.x,p.y,w,h);g.fillStyle='#111';g.font='8px monospace';g.fillText(it.key==='shoe'?'S':'C',p.x+8,p.y+13)}
+  else if(it.type==='items'){
+   if(it.key==='cube'){
+    g.fillStyle='#5b3489';g.fillRect(p.x,p.y,w,h);
+    const cs=['#fff2a2','#75d5ff','#ff88b7','#9df8a7','#ffffff','#ffa857'];
+    for(let iy=0;iy<3;iy++)for(let ix=0;ix<3;ix++){
+     g.fillStyle=cs[(ix+iy*3)%cs.length];g.fillRect(p.x+2+ix*6,p.y+2+iy*6,5,5);
+    }
+   }else{g.fillRect(p.x,p.y,w,h);g.strokeRect(p.x,p.y,w,h);g.fillStyle='#111';g.font='8px monospace';g.fillText(it.key==='shoe'?'S':'C',p.x+8,p.y+13)}
+  }
   else if(it.type==='finish'){g.fillRect(p.x,p.y,3,50);g.fillRect(p.x+3,p.y,20,10)}
   else if(it.type==='start'){g.fillRect(p.x,p.y,w,h);g.fillStyle='#101a36';g.font='8px monospace';g.fillText('A',p.x+5,p.y+16)}
   else{g.fillRect(p.x,p.y,w,h);g.strokeRect(p.x,p.y,w,h)}
@@ -125,14 +140,20 @@ function propertyPanel(){
  const fields=[['x','Posição X',0,data.width]];
  if(it.type!=='holes'&&it.type!=='finish')fields.push(['y','Posição Y',-64,216]);
  if(it.type==='platforms'||it.type==='holes')fields.push(['w','Largura',16,1200]);
- if(it.type==='blocks')fields.push(['hp','Resistência',1,20]);
+ if(it.type==='blocks'&&it.obj.type!==3)fields.push(['hp','Resistência',1,20]);
+ if(it.type==='platforms'&&it.obj.kind!=='static'){
+  fields.push(['range','Distância do movimento',0,800],['speed','Velocidade',0.1,6]);
+ }
+ if(it.type==='springs')fields.push(['force','Força da mola',5,20]);
+ if(it.type==='spikes')fields.push(['w','Largura dos espinhos',16,800]);
  if(it.type==='enemies')fields.push(['hp','Vida',1,20]);
  for(const [key,label,min,max] of fields){
   const wrap=document.createElement('label'),input=document.createElement('input');wrap.textContent=label;
-  input.type='number';input.min=min;input.max=max;input.step=1;
+  input.type='number';input.min=min;input.max=max;input.step=key==='speed'||key==='force'?0.1:1;
   input.value=it.type==='finish'?data.finish:it.obj[key];
   input.onchange=()=>{const n=Number(input.value);if(!Number.isFinite(n)||n<min||n>max){setStatus('Valor inválido para '+label);propertyPanel();return}snapshot();
-   if(it.type==='finish')data.finish=n;else{it.obj[key]=n;if(it.type==='enemies'&&key==='y')it.obj.baseY=n}
+   if(it.type==='finish')data.finish=n;else{it.obj[key]=n;if(it.type==='enemies'&&key==='y')it.obj.baseY=n;
+   if(it.type==='platforms'&&(key==='x'||key==='y')){it.obj.originX=it.obj.x;it.obj.originY=it.obj.y}}
    renderAll();
   };
   wrap.append(input);box.append(wrap);
@@ -146,8 +167,8 @@ function propertyPanel(){
 function validate(){
  const problems=[];
  if(data.start.x>=data.finish)problems.push('Início está depois da chegada.');
- if(data.items.pacifier&&level===2)problems.push('Super Chupeta posicionada na fase 1-2 (o jogo usa apenas na 1-1).');
- if(data.items.shoe&&level===1)problems.push('Sapatinho posicionado na fase 1-1 (o jogo usa apenas na 1-2).');
+ if(data.items.pacifier&&level!==1)problems.push('Super Chupeta posicionada na fase 1-2 (disponível apenas na 1-1).');
+ if(data.items.shoe&&level!==2)problems.push('Sapatinho posicionado na fase 1-1 (disponível apenas na 1-2).');
  for(const it of objects()){
   if(it.type==='holes')continue;
   const p=pos(it),[w,h]=dims(it);
@@ -160,7 +181,7 @@ function validate(){
  for(const issue of [...new Set(problems)].slice(0,30)){const p=document.createElement('p');p.textContent='⚠ '+issue;box.append(p)}
 }
 function renderAll(){draw();propertyPanel();validate()}
-function switchPhase(n){level=n;data=api.load(level);selected=null;history=[];future=[];offset=0;renderAll();setStatus('Fase 1-'+level+' carregada.')}
+function switchPhase(n){level=n;data=api.load(level,{draftFirst:true});selected=null;history=[];future=[];offset=0;renderAll();setStatus('Fase 1-'+level+' carregada ('+(api.hasDraft(level)?'rascunho local':api.hasPublished(level)?'JSON do projeto':'padrão')+').')}
 canvas.addEventListener('pointerdown',e=>{
  if(e.button!==0&&e.button!==1)return;e.preventDefault();canvas.setPointerCapture(e.pointerId);
  const {x,y}=world(e);
@@ -187,10 +208,10 @@ $('#delete').onclick=()=>remove(locate(selected));$('#duplicate').onclick=duplic
 $('#save').onclick=()=>{try{api.save(level,data);history=[];future=[];setStatus('Fase 1-'+level+' salva no navegador.')}catch(e){setStatus('Falha ao salvar: '+e.message)}};
 $('#export').onclick=()=>{
  const clean=api.sanitize(data,level),blob=new Blob([JSON.stringify(clean,null,2)],{type:'application/json'});
- const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='aurora-fase-1-'+level+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setStatus('Mapa exportado em JSON.');
+ const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='fase-1-'+level+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setStatus('Arquivo fase-1-'+level+'.json exportado. Copie-o para a pasta fases/ do projeto e faça commit/push.');
 };
 $('#import').onclick=()=>$('#importFile').click();
-$('#importFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const json=JSON.parse(await file.text());snapshot();data=api.sanitize(json,level);selected=null;renderAll();setStatus('Mapa importado. Salve para testar.')}catch(err){setStatus('Erro na importação: '+err.message)}e.target.value=''};
+$('#importFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const json=JSON.parse(await file.text());snapshot();data=api.sanitize(json,level);selected=null;renderAll();setStatus('Mapa importado. Salve para testar ou exporte para atualizar fases/.')}catch(err){setStatus('Erro na importação: '+err.message)}e.target.value=''};
 $('#test').onclick=()=>{try{api.save(level,data);window.open('index.html?testLevel='+level,'_blank');setStatus('Rascunho salvo. Abrindo teste direto da fase 1-'+level+'.')}catch(e){setStatus('Não foi possível iniciar teste: '+e.message)}};
 $('#reset').onclick=()=>{if(!confirm('Restaurar a fase 1-'+level+' ao mapa original?'))return;snapshot();data=api.createDefault(level);selected=null;renderAll();setStatus('Mapa original restaurado no editor. Salve para aplicar.')};
 for(const [key,label] of Object.entries(categories)){

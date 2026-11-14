@@ -1,0 +1,8 @@
+V28.1 — Música dos créditos finais
+
+Coloque aqui o arquivo creditos.mp3
+Caminho: assets/audio/creditos.mp3
+A música começa ao iniciar os créditos após a fase 1-6.
+Sem o arquivo, os créditos funcionam em silêncio.
+A rolagem tem velocidade 2x; segure Z para acelerar mais 2x.
+Ao terminar, aguarda 3 segundos e retorna à tela inicial.
