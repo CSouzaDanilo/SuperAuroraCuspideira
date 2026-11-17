@@ -46,9 +46,9 @@ shoe={x:1750,y:109,w:24,h:23};
 boss={x:3340,y:ground-53,w:55,h:53,dir:-1,hp:8,maxHp:8,hit:0,alive:true,phase:0,vy:0,grounded:true,jumpWait:35};
 
 const map={version:2,id:'1-'+level,width:W,ground:GROUND,start:{x:32,y:135},finish:3470,
- blocks,platforms:ledges,enemies,coins,holes,boss,spikes:[],springs:[],
+ blocks,platforms:ledges,enemies,coins,holes,boss,bosses:boss?[boss]:[],spikes:[],springs:[],
  items:level===1?{pacifier,shoe:null,cube:null}:level===2?{pacifier:null,shoe,cube:null}:{pacifier:null,shoe:null,cube:null}};
-return map;
+map.itemLists={pacifier:map.items.pacifier?[map.items.pacifier]:[],shoe:map.items.shoe?[map.items.shoe]:[],cube:[]};return map;
 }
 function clone(o){return JSON.parse(JSON.stringify(o))}
 function validNum(v,min,max){return typeof v==='number'&&Number.isFinite(v)&&v>=min&&v<=max}
@@ -60,24 +60,24 @@ function sanitize(raw,level){
  if(validNum(raw.ground,80,216))out.ground=Math.round(raw.ground);
  const clean=(arr,max,fn)=>Array.isArray(arr)?arr.slice(0,max).filter(x=>x&&typeof x==='object').map(fn).filter(Boolean):null;
  const pos=(x)=>validNum(x,-200,15000);
- const blocks=clean(raw.blocks,2000,b=>pos(b.x)&&pos(b.y)?{x:b.x,y:b.y,w:16,h:16,type:[0,1,2,3].includes(b.type)?b.type:0,hp:validNum(b.hp,1,20)?b.hp:1,alive:true}:null);
+ const blocks=clean(raw.blocks,Infinity,b=>pos(b.x)&&pos(b.y)?{x:b.x,y:b.y,w:16,h:16,type:[0,1,2,3].includes(b.type)?b.type:0,hp:validNum(b.hp,1,20)?b.hp:1,alive:true}:null);
  if(blocks)out.blocks=blocks;
- const platforms=clean(raw.platforms,400,b=>pos(b.x)&&pos(b.y)&&validNum(b.w,8,1200)?{
+ const platforms=clean(raw.platforms,Infinity,b=>pos(b.x)&&pos(b.y)&&validNum(b.w,8,1200)?{
  x:b.x,y:b.y,w:b.w,h:validNum(b.h,2,100)?b.h:8,
  kind:['static','horizontal','vertical'].includes(b.kind)?b.kind:'static',
  range:validNum(b.range,0,800)?b.range:96,speed:validNum(b.speed,0.1,6)?b.speed:0.8,
  originX:b.x,originY:b.y,dir:1
 }:null);
  if(platforms)out.platforms=platforms;
- const coins=clean(raw.coins,1500,c=>pos(c.x)&&pos(c.y)?{x:c.x,y:c.y,got:false}:null);
+ const coins=clean(raw.coins,Infinity,c=>pos(c.x)&&pos(c.y)?{x:c.x,y:c.y,got:false}:null);
  if(coins)out.coins=coins;
- const enemies=clean(raw.enemies,400,e=>pos(e.x)&&pos(e.y)&&kinds.includes(e.kind)?{x:e.x,y:e.y,w:e.kind==='planta'?24:19,h:e.kind==='planta'?30:16,baseY:e.y,kind:e.kind,dir:e.dir===1?1:-1,hp:validNum(e.hp,1,20)?e.hp:1,phase:0,alive:true,hit:0}:null);
+ const enemies=clean(raw.enemies,Infinity,e=>pos(e.x)&&pos(e.y)&&kinds.includes(e.kind)?{x:e.x,y:e.y,w:e.kind==='planta'?24:19,h:e.kind==='planta'?30:16,baseY:e.y,kind:e.kind,dir:e.dir===1?1:-1,hp:validNum(e.hp,1,20)?e.hp:1,phase:0,alive:true,hit:0}:null);
  if(enemies)out.enemies=enemies;
- const holes=clean(raw.holes,80,h=>pos(h.x)&&validNum(h.w,16,800)?{x:h.x,w:h.w}:null);
+ const holes=clean(raw.holes,Infinity,h=>pos(h.x)&&validNum(h.w,16,800)?{x:h.x,w:h.w}:null);
  if(holes)out.holes=holes;
- const spikes=clean(raw.spikes,300,a=>pos(a.x)&&pos(a.y)&&validNum(a.w,16,800)?{x:a.x,y:a.y,w:a.w,h:12}:null);
+ const spikes=clean(raw.spikes,Infinity,a=>pos(a.x)&&pos(a.y)&&validNum(a.w,16,800)?{x:a.x,y:a.y,w:a.w,h:12}:null);
  if(spikes)out.spikes=spikes;
- const springs=clean(raw.springs,200,a=>pos(a.x)&&pos(a.y)?{x:a.x,y:a.y,w:20,h:12,force:validNum(a.force,5,20)?a.force:10.5}:null);
+ const springs=clean(raw.springs,Infinity,a=>pos(a.x)&&pos(a.y)?{x:a.x,y:a.y,w:20,h:12,force:validNum(a.force,5,20)?a.force:10.5}:null);
  if(springs)out.springs=springs;
  if(raw.start&&pos(raw.start.x)&&pos(raw.start.y))out.start={x:raw.start.x,y:raw.start.y};
  if(validNum(raw.finish,0,out.width))out.finish=raw.finish;
@@ -86,8 +86,20 @@ function sanitize(raw,level){
    const item=raw.items[name];out.items[name]=item&&pos(item.x)&&pos(item.y)?{x:item.x,y:item.y,w:name==='shoe'?24:name==='cube'?22:22,h:name==='shoe'?23:name==='cube'?22:22}:null;
   }
  }
- if(raw.boss===null)out.boss=null;
- else if(raw.boss&&pos(raw.boss.x)&&pos(raw.boss.y))out.boss={...out.boss,x:raw.boss.x,y:raw.boss.y};
+ out.itemLists={pacifier:[],shoe:[],cube:[]};
+ for(const name of ['pacifier','shoe','cube']){
+  const list=Array.isArray(raw.itemLists?.[name])?raw.itemLists[name]:(out.items[name]?[out.items[name]]:[]);
+  out.itemLists[name]=list.filter(it=>it&&pos(it.x)&&pos(it.y)).map(it=>({x:it.x,y:it.y,w:name==='shoe'?24:22,h:name==='shoe'?23:22}));
+  out.items[name]=out.itemLists[name][0]||null;
+ }
+ if(Array.isArray(raw.bosses)){
+  out.bosses=raw.bosses.filter(b=>b&&pos(b.x)&&pos(b.y)).map(b=>({x:b.x,y:b.y,kind:b.kind==='cobra_mola'?'cobra_mola':'sapo_rei',w:b.kind==='cobra_mola'?110:55,h:b.kind==='cobra_mola'?106:53,hp:8,maxHp:8,alive:true}));
+  out.boss=out.bosses.find(b=>b.kind==='sapo_rei')||null;
+ }else if(raw.boss===null){out.boss=null;out.bosses=[];}
+ else if(raw.boss&&pos(raw.boss.x)&&pos(raw.boss.y)){out.bosses=[{x:raw.boss.x,y:raw.boss.y,kind:'sapo_rei',w:55,h:53,hp:8,maxHp:8,alive:true}];}
+ /* Compatibilidade com mapas anteriores que armazenavam apenas boss. */
+ if(!Array.isArray(raw.bosses)&&!raw.boss&&raw.boss!==null)out.bosses=out.boss?[out.boss]:[];
+
  return out;
 }
 // V28.2: arquivos JSON versionados no GitHub são a fonte oficial.

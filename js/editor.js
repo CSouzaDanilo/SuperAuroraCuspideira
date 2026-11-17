@@ -15,8 +15,8 @@ function objects(){
  for(const [type,key] of [['blocks','blocks'],['platforms','platforms'],['coins','coins'],['enemies','enemies'],['holes','holes'],['spikes','spikes'],['springs','springs']]){
   data[key].forEach((obj,i)=>a.push({type,key,index:i,obj}));
  }
- for(const type of ['pacifier','shoe','cube'])if(data.items[type])a.push({type:'items',key:type,index:0,obj:data.items[type]});
- if(data.boss)a.push({type:'boss',key:'boss',index:0,obj:data.boss});
+ for(const type of ['pacifier','shoe','cube'])(data.itemLists?.[type]||[]).forEach((obj,i)=>a.push({type:'items',key:type,index:i,obj}));
+ (data.bosses||[]).forEach((obj,i)=>a.push({type:'boss',key:'bosses',index:i,obj}));
  a.push({type:'start',key:'start',index:0,obj:data.start});
  a.push({type:'finish',key:'finish',index:0,obj:{x:data.finish,y:0,w:5,h:data.ground}});
  return a;
@@ -30,7 +30,7 @@ function dims(it){
  if(it.type==='holes')return [o.w,216-data.ground+8];
  if(it.type==='start')return [17,29];
  if(it.type==='finish')return [8,50];
- if(it.type==='boss')return [55,53];
+ if(it.type==='boss')return [it.obj.w||55,it.obj.h||53];
  return [o.w||22,o.h||22];
 }
 function pos(it){
@@ -64,8 +64,8 @@ function remove(it){
  if(!it||it.type==='start'||it.type==='finish')return;
  snapshot();
  if(['blocks','platforms','coins','enemies','holes','spikes','springs'].includes(it.type))data[it.key].splice(it.index,1);
- else if(it.type==='items')data.items[it.key]=null;
- else if(it.type==='boss')data.boss=null;
+ else if(it.type==='items')data.itemLists[it.key].splice(it.index,1);
+ else if(it.type==='boss')data.bosses.splice(it.index,1);
  selected=null;renderAll();
 }
 function create(tool,x,y){
@@ -77,16 +77,16 @@ function create(tool,x,y){
  if(tool==='spikes'){data.spikes.push({x:X,y:Y,w:48,h:12});it={type:'spikes',key:'spikes',index:data.spikes.length-1}}
  if(tool==='spring'){data.springs.push({x:X,y:Y,w:20,h:12,force:10.5});it={type:'springs',key:'springs',index:data.springs.length-1}}
  if(tool==='hole'){data.holes.push({x:X,w:64});it={type:'holes',key:'holes',index:data.holes.length-1}}
- if(tool==='pacifier'||tool==='shoe'||tool==='cube'){data.items[tool]={x:X,y:Y,w:tool==='shoe'?24:22,h:tool==='shoe'?23:22};it={type:'items',key:tool,index:0}}
- if(tool==='boss'){data.boss={x:X,y:Y,w:55,h:53,hp:8,maxHp:8,alive:true};it={type:'boss',key:'boss',index:0}}
+ if(tool==='pacifier'||tool==='shoe'||tool==='cube'){data.itemLists??={pacifier:[],shoe:[],cube:[]};data.itemLists[tool].push({x:X,y:Y,w:tool==='shoe'?24:22,h:tool==='shoe'?23:22});it={type:'items',key:tool,index:data.itemLists[tool].length-1}}
+ if(tool==='boss'||tool==='cobra_mola'){const snake=tool==='cobra_mola';data.bosses??=[];data.bosses.push({x:X,y:Y,kind:snake?'cobra_mola':'sapo_rei',w:snake?110:55,h:snake?106:53,hp:8,maxHp:8,alive:true});it={type:'boss',key:'bosses',index:data.bosses.length-1}}
  if(tool==='start'){data.start={x:X,y:Y};it={type:'start',key:'start',index:0}}
  if(tool==='finish'){data.finish=X;it={type:'finish',key:'finish',index:0}}
  selected=it?locate(it):null;renderAll();
 }
 function duplicate(){
- if(!selected||['start','finish','boss'].includes(selected.type))return;
+ if(!selected||['start','finish'].includes(selected.type))return;
  const it=selected;snapshot();const obj=clone(it.obj);obj.x+=16;
- if(it.type==='items'){setStatus('Itens únicos não podem ser duplicados.');history.pop();return}
+ 
  data[it.key].push(obj);selected=locate({type:it.type,key:it.key,index:data[it.key].length-1});renderAll();
 }
 function draw(){
@@ -167,14 +167,14 @@ function propertyPanel(){
 function validate(){
  const problems=[];
  if(data.start.x>=data.finish)problems.push('Início está depois da chegada.');
- if(data.items.pacifier&&level!==1)problems.push('Super Chupeta posicionada na fase 1-2 (disponível apenas na 1-1).');
- if(data.items.shoe&&level!==2)problems.push('Sapatinho posicionado na fase 1-1 (disponível apenas na 1-2).');
+ if(data.itemLists.pacifier.length&&level!==1)problems.push('Super Chupeta posicionada na fase 1-2 (disponível apenas na 1-1).');
+ if(data.itemLists.shoe.length&&level!==2)problems.push('Sapatinho posicionado na fase 1-1 (disponível apenas na 1-2).');
  for(const it of objects()){
   if(it.type==='holes')continue;
   const p=pos(it),[w,h]=dims(it);
   if(p.x<0||p.x+w>data.width)problems.push('Objeto '+it.key+' fora dos limites horizontais.');
   if(it.type==='items'&&data.blocks.some(b=>p.x<b.x+16&&p.x+w>b.x&&p.y<b.y+16&&p.y+h>b.y))problems.push('Item '+it.key+' sobreposto a um bloco.');
-  if(it.type==='enemies'&&data.holes.some(h=>p.x>=h.x&&p.x<h.x+h.w))problems.push('Inimigo em cima de um buraco, x='+Math.round(p.x));
+  if(it.type==='enemies'&&it.obj.kind!=='joaninha'&&data.holes.some(h=>p.x>=h.x&&p.x<h.x+h.w))problems.push('Inimigo em cima de um buraco, x='+Math.round(p.x));
  }
  const box=$('#warnings');box.replaceChildren();
  if(!problems.length){box.textContent='✓ Nenhum problema básico detectado.';return}

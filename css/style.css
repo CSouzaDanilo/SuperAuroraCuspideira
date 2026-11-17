@@ -33,3 +33,6 @@
 .overlay.stage-complete .panel #message,.overlay.stage-complete .panel #sub,.overlay.stage-complete .panel #play,.overlay.stage-complete .panel #sound{display:none!important}
 .overlay.stage-complete .panel{padding:26px 32px}
 .overlay.stage-complete .panel h2{margin:0}
+/* V29.0: controles virtuais sempre disponíveis em dispositivos touch, inclusive paisagem. */
+@media (pointer:coarse){.controls{display:flex!important}.controls button{touch-action:none;-webkit-user-select:none;user-select:none;min-width:48px;min-height:48px}.controls button:active{filter:brightness(.75);transform:translateY(2px)}body{overscroll-behavior:none}}
+@media (pointer:coarse) and (orientation:landscape) and (max-height:520px){body{padding:3px}.wrap h1{font-size:16px;margin:0}.frame{max-width:min(100%,calc((100dvh - 105px)*16/9));margin:auto}.controls{margin-top:3px}.controls button{min-height:38px;padding:5px 10px}.hint{display:none}.status{font-size:10px;margin-top:4px}}
