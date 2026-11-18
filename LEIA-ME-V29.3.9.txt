@@ -1,0 +1,8 @@
+V29.3.9 — Renderizacao hibrida experimental
+
+- Canvas interno: 768x432 (2x), mundo logico mantido em 384x216.
+- Somente sprites da Planta Carnivora usam interpolacao de alta qualidade.
+- Os demais sprites continuam com interpolacao desativada (pixel art).
+- Os 28 PNGs RGBA originais da planta foram preservados em 512x384.
+- Editor, configuracoes, controles e seis fases JSON preservados.
+- Caso prefira voltar ao visual anterior, use V29.3.8.

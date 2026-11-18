@@ -1,0 +1,1 @@
+V29.3 - Ratinho de óculos: sprites 4 patas, 4 quadros parado, 8 correndo, 2 dano e 4 derrota. Fica parado até Aurora chegar a 135 px; então foge. Mantém 1 HP configurável em configuracoes.html. Seis fases JSON preservadas.

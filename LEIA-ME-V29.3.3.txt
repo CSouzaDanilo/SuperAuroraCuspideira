@@ -1,0 +1,1 @@
+V29.3.3 — Ratinho: 18 quadros extraídos da spritesheet aprovada de fundo verde, convertidos para PNG RGBA transparente 320x190. Preservados o tamanho no jogo, comportamento, colisões e seis fases JSON.

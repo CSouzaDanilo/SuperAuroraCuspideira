@@ -16,7 +16,7 @@ section{background:#22234a;border:3px solid #525c95;padding:19px;margin:18px 0;b
 @media(max-width:480px){main{padding:12px}section{padding:12px}}
 </style></head><body><main>
 <h1>⚙ CONFIGURAÇÕES DA AURORA</h1>
-<p>Ajuste os números do jogo sem modificar a lógica JavaScript. Salve, abra o jogo e recarregue a página para testar. Este painel é separado do editor de fases.</p>
+<p>Ajuste os números do jogo sem modificar a lógica JavaScript. Salve, abra o jogo e recarregue a página para testar. Este painel é separado do editor de fases. Cada inimigo e chefão possui sua própria seção. Os ajustes ajudam a equilibrar o level design das seis fases.</p>
 <div class="note">Os valores são salvos neste navegador. Para levar a configuração para outro computador ou navegador, use <b>EXPORTAR JSON</b> e depois <b>IMPORTAR JSON</b>. Em alguns navegadores, o armazenamento de páginas abertas diretamente por arquivo pode ser limitado; nesse caso, use um servidor local.</div>
 <div class="toolbar">
 <button id="save">💾 SALVAR ALTERAÇÕES</button>
@@ -28,7 +28,7 @@ section{background:#22234a;border:3px solid #525c95;padding:19px;margin:18px 0;b
 </div>
 <div id="status" role="status" aria-live="polite"></div>
 <div id="sections"></div>
-<section id="audioSettings"><h2>🔊 ÁUDIO</h2><p>Configure os volumes das músicas e dos efeitos. Os arquivos de áudio serão integrados aos poucos, após a etapa de level design.</p><label for="audioMuted"><input type="checkbox" id="audioMuted"> Silenciar todo o jogo</label><p>As alterações são aplicadas ao recarregar o jogo após salvar.</p></section>
+<section id="audioSettings"><h2>🔊 ÁUDIO</h2><p>Configure os volumes das músicas e dos efeitos. Os arquivos de áudio serão integrados aos poucos, após a etapa de level design. Os volumes já funcionam para os sons existentes.</p><label for="audioMuted"><input type="checkbox" id="audioMuted"> Silenciar todo o jogo</label><p>As alterações são aplicadas ao recarregar o jogo após salvar.</p></section>
 <section id="creditsSettings"><h2>🎬 Créditos finais — após a fase 1-6</h2><p>Edite o texto abaixo. As quebras de linha serão preservadas na tela de créditos. Clique em SALVAR ALTERAÇÕES para aplicar. A música própria poderá ser incluída depois em <code>assets/audio/creditos.mp3</code>.</p><label for="creditsText">Texto completo dos créditos</label><textarea id="creditsText" spellcheck="false"></textarea><p><button type="button" id="resetCredits" class="secondary">↺ RESTAURAR TEXTO PADRÃO</button></p></section>
 <p>Os controles do jogo continuam: setas para movimentar, Z ou ↑ para pular e C para cuspir. Nenhuma configuração de agachamento foi adicionada.</p>
 </main>
@@ -55,7 +55,19 @@ const groups=[
  ['chargeMaxFrames','Limite do medidor de carga','quadros a 60 FPS'],
  ['cooldownFrames','Intervalo entre disparos','quadros']]],
  ['audio','ÁUDIO — volumes', [['musicVolume','Volume das músicas','%'],['effectsVolume','Volume dos efeitos','%']]],
- ['boss','Super Sapo Rei',[['health','Vida do chefe','pontos de vida']]],
+ ['enemy_barata','Inimigo — Barata',[['speed','Velocidade de movimento','px/quadro'],['health','Pontos de vida','HP'],['gravity','Gravidade individual','px/quadro²'],['stompDamage','Dano ao receber pisão na cabeça (0 = imune)','HP'],['spitDamageMultiplier','Multiplicador de dano dos cuspes (0 = imune)','multiplicador']]],
+ ['enemy_joaninha','Inimigo — Joaninha (voadora)',[['speed','Velocidade de movimento','px/quadro'],['health','Pontos de vida','HP'],['gravity','Gravidade individual','px/quadro²'],['stompDamage','Dano ao receber pisão na cabeça (0 = imune)','HP'],['spitDamageMultiplier','Multiplicador de dano dos cuspes (0 = imune)','multiplicador']]],
+ ['enemy_caramujo','Inimigo — Caramujo',[['speed','Velocidade de movimento','px/quadro'],['health','Pontos de vida','HP'],['gravity','Gravidade individual','px/quadro²'],['stompDamage','Dano ao receber pisão na cabeça (0 = imune)','HP'],['spitDamageMultiplier','Multiplicador de dano dos cuspes (0 = imune)','multiplicador']]],
+ ['enemy_sapo','Inimigo — Sapo comum',[['speed','Velocidade de movimento','px/quadro'],['health','Pontos de vida','HP'],['gravity','Gravidade individual','px/quadro²'],['stompDamage','Dano ao receber pisão na cabeça (0 = imune)','HP'],['spitDamageMultiplier','Multiplicador de dano dos cuspes (0 = imune)','multiplicador']]],
+ ['enemy_lesma','Inimigo — Lesma',[['speed','Velocidade de movimento','px/quadro'],['health','Pontos de vida','HP'],['gravity','Gravidade individual','px/quadro²'],['stompDamage','Dano ao receber pisão na cabeça (0 = imune)','HP'],['spitDamageMultiplier','Multiplicador de dano dos cuspes (0 = imune)','multiplicador']]],
+ ['enemy_besouro','Inimigo — Besouro',[['speed','Velocidade de movimento','px/quadro'],['health','Pontos de vida','HP'],['gravity','Gravidade individual','px/quadro²'],['stompDamage','Dano ao receber pisão na cabeça (0 = imune)','HP'],['spitDamageMultiplier','Multiplicador de dano dos cuspes (0 = imune)','multiplicador']]],
+ ['enemy_caranguejo','Inimigo — Caranguejo',[['speed','Velocidade de movimento','px/quadro'],['health','Pontos de vida','HP'],['gravity','Gravidade individual','px/quadro²'],['stompDamage','Dano ao receber pisão na cabeça (0 = imune)','HP'],['spitDamageMultiplier','Multiplicador de dano dos cuspes (0 = imune)','multiplicador']]],
+ ['enemy_ratinho','Inimigo — Ratinho',[['speed','Velocidade de movimento','px/quadro'],['health','Pontos de vida','HP'],['gravity','Gravidade individual','px/quadro²'],['stompDamage','Dano ao receber pisão na cabeça (0 = imune)','HP'],['spitDamageMultiplier','Multiplicador de dano dos cuspes (0 = imune)','multiplicador']]],
+ ['enemy_planta','Inimigo — Planta carnívora',[['speed','Velocidade de movimento','px/quadro'],['health','Pontos de vida','HP'],['gravity','Gravidade individual','px/quadro²'],['stompDamage','Dano ao receber pisão na cabeça (0 = imune)','HP'],['spitDamageMultiplier','Multiplicador de dano dos cuspes (0 = imune)','multiplicador']]],
+ ['boss_sapo_rei','Chefão — Super Sapo Rei',[['health','Pontos de vida','HP'],['jumpForce','Força do salto','intensidade'],['jumpInterval','Intervalo entre saltos','quadros'],['gravity','Gravidade','px/quadro²'],['moveSpeed','Velocidade de perseguição','multiplicador'],['stompDamage','Dano ao receber pisão (0 = imune)','HP'],['normalSpitDamage','Dano recebido de cuspe normal (0 = imune)','HP'],['superSpitDamage','Dano recebido de Super Cuspe (0 = imune)','HP']]],
+ ['boss_cobra_mola','Chefão — Cobra Mola',[['health','Pontos de vida','HP'],['jumpForce','Força do salto','intensidade'],['jumpInterval','Intervalo entre saltos','quadros'],['gravity','Gravidade','px/quadro²'],['moveSpeed','Velocidade de perseguição','multiplicador'],['stompDamage','Dano ao receber pisão (0 = imune)','HP'],['normalSpitDamage','Dano recebido de cuspe normal (0 = imune)','HP'],['superSpitDamage','Dano recebido de Super Cuspe (0 = imune)','HP']]],
+ ['camera','Câmera horizontal',[['followOffset','Distância da Aurora à borda esquerda','pixels']]],
+ ['credits','Créditos finais — rolagem',[['speedMultiplier','Velocidade de subida do texto','multiplicador']]],
  ['transitions','Transições',[['victoryDelayMs','Duração da tela FASE CONCLUÍDA','milissegundos']]],
  ['rewards','Pontuação e recompensas',[
  ['coinPoints','Pontos por moeda','pontos'],['blockPoints','Pontos por bloco','pontos'],

@@ -676,60 +676,6 @@
       "alive": true
     },
     {
-      "x": 2400,
-      "y": 128,
-      "w": 16,
-      "h": 16,
-      "type": 0,
-      "hp": 1,
-      "alive": true
-    },
-    {
-      "x": 2400,
-      "y": 112,
-      "w": 16,
-      "h": 16,
-      "type": 0,
-      "hp": 1,
-      "alive": true
-    },
-    {
-      "x": 2384,
-      "y": 112,
-      "w": 16,
-      "h": 16,
-      "type": 0,
-      "hp": 1,
-      "alive": true
-    },
-    {
-      "x": 2384,
-      "y": 128,
-      "w": 16,
-      "h": 16,
-      "type": 0,
-      "hp": 1,
-      "alive": true
-    },
-    {
-      "x": 2416,
-      "y": 128,
-      "w": 16,
-      "h": 16,
-      "type": 0,
-      "hp": 1,
-      "alive": true
-    },
-    {
-      "x": 2416,
-      "y": 112,
-      "w": 16,
-      "h": 16,
-      "type": 0,
-      "hp": 1,
-      "alive": true
-    },
-    {
       "x": 2768,
       "y": 144,
       "w": 16,
@@ -1425,26 +1371,26 @@
   ],
   "platforms": [
     {
-      "x": 404,
+      "x": 408,
       "y": 144,
       "w": 80,
       "h": 8,
       "kind": "static",
       "range": 96,
       "speed": 0.8,
-      "originX": 404,
+      "originX": 408,
       "originY": 144,
       "dir": 1
     },
     {
-      "x": 656,
+      "x": 645,
       "y": 144,
       "w": 80,
       "h": 8,
       "kind": "static",
       "range": 96,
       "speed": 0.8,
-      "originX": 656,
+      "originX": 645,
       "originY": 144,
       "dir": 1
     },
@@ -1547,19 +1493,6 @@
   ],
   "enemies": [
     {
-      "x": 224,
-      "y": 171,
-      "w": 19,
-      "h": 16,
-      "baseY": 171,
-      "kind": "barata",
-      "dir": -1,
-      "hp": 1,
-      "phase": 0,
-      "alive": true,
-      "hit": 0
-    },
-    {
       "x": 592,
       "y": 128,
       "w": 19,
@@ -1574,26 +1507,13 @@
     },
     {
       "x": 1040,
-      "y": 172,
+      "y": 160,
       "w": 19,
       "h": 16,
-      "baseY": 172,
+      "baseY": 160,
       "kind": "besouro",
       "dir": 1,
       "hp": 3,
-      "phase": 0,
-      "alive": true,
-      "hit": 0
-    },
-    {
-      "x": 1370,
-      "y": 172,
-      "w": 19,
-      "h": 16,
-      "baseY": 172,
-      "kind": "barata",
-      "dir": 1,
-      "hp": 1,
       "phase": 0,
       "alive": true,
       "hit": 0
@@ -1612,11 +1532,11 @@
       "hit": 0
     },
     {
-      "x": 2016,
-      "y": 172,
+      "x": 2144,
+      "y": 160,
       "w": 19,
       "h": 16,
-      "baseY": 172,
+      "baseY": 160,
       "kind": "sapo",
       "dir": -1,
       "hp": 1,
@@ -1625,79 +1545,14 @@
       "hit": 0
     },
     {
-      "x": 2112,
-      "y": 172,
+      "x": 2272,
+      "y": 160,
       "w": 19,
       "h": 16,
-      "baseY": 172,
-      "kind": "lesma",
-      "dir": 1,
-      "hp": 1,
-      "phase": 0,
-      "alive": true,
-      "hit": 0
-    },
-    {
-      "x": 2250,
-      "y": 172,
-      "w": 19,
-      "h": 16,
-      "baseY": 172,
+      "baseY": 160,
       "kind": "besouro",
       "dir": -1,
       "hp": 3,
-      "phase": 0,
-      "alive": true,
-      "hit": 0
-    },
-    {
-      "x": 3192,
-      "y": 172,
-      "w": 19,
-      "h": 16,
-      "baseY": 172,
-      "kind": "caramujo",
-      "dir": -1,
-      "hp": 1,
-      "phase": 0,
-      "alive": true,
-      "hit": 0
-    },
-    {
-      "x": 2224,
-      "y": 112,
-      "w": 19,
-      "h": 16,
-      "baseY": 112,
-      "kind": "joaninha",
-      "dir": -1,
-      "hp": 1,
-      "phase": 0,
-      "alive": true,
-      "hit": 0
-    },
-    {
-      "x": 432,
-      "y": 112,
-      "w": 24,
-      "h": 30,
-      "baseY": 112,
-      "kind": "planta",
-      "dir": -1,
-      "hp": 2,
-      "phase": 0,
-      "alive": true,
-      "hit": 0
-    },
-    {
-      "x": 368,
-      "y": 171,
-      "w": 19,
-      "h": 16,
-      "baseY": 171,
-      "kind": "ratinho",
-      "dir": -1,
-      "hp": 1,
       "phase": 0,
       "alive": true,
       "hit": 0
@@ -1730,10 +1585,10 @@
     },
     {
       "x": 928,
-      "y": 172,
+      "y": 160,
       "w": 19,
       "h": 16,
-      "baseY": 172,
+      "baseY": 160,
       "kind": "lesma",
       "dir": -1,
       "hp": 1,
@@ -1742,11 +1597,11 @@
       "hit": 0
     },
     {
-      "x": 1168,
-      "y": 172,
+      "x": 1328,
+      "y": 160,
       "w": 19,
       "h": 16,
-      "baseY": 172,
+      "baseY": 160,
       "kind": "lesma",
       "dir": -1,
       "hp": 1,
@@ -1768,12 +1623,116 @@
       "hit": 0
     },
     {
-      "x": 1584,
-      "y": 172,
+      "x": 1184,
+      "y": 160,
       "w": 19,
       "h": 16,
-      "baseY": 172,
+      "baseY": 160,
       "kind": "ratinho",
+      "dir": -1,
+      "hp": 1,
+      "phase": 0,
+      "alive": true,
+      "hit": 0
+    },
+    {
+      "x": 704,
+      "y": 160,
+      "w": 19,
+      "h": 16,
+      "baseY": 160,
+      "kind": "ratinho",
+      "dir": -1,
+      "hp": 1,
+      "phase": 0,
+      "alive": true,
+      "hit": 0
+    },
+    {
+      "x": 272,
+      "y": 160,
+      "w": 19,
+      "h": 16,
+      "baseY": 160,
+      "kind": "lesma",
+      "dir": -1,
+      "hp": 1,
+      "phase": 0,
+      "alive": true,
+      "hit": 0
+    },
+    {
+      "x": 1552,
+      "y": 160,
+      "w": 19,
+      "h": 16,
+      "baseY": 160,
+      "kind": "lesma",
+      "dir": -1,
+      "hp": 1,
+      "phase": 0,
+      "alive": true,
+      "hit": 0
+    },
+    {
+      "x": 2048,
+      "y": 160,
+      "w": 19,
+      "h": 16,
+      "baseY": 160,
+      "kind": "besouro",
+      "dir": -1,
+      "hp": 3,
+      "phase": 0,
+      "alive": true,
+      "hit": 0
+    },
+    {
+      "x": 2528,
+      "y": 80,
+      "w": 19,
+      "h": 16,
+      "baseY": 80,
+      "kind": "joaninha",
+      "dir": -1,
+      "hp": 1,
+      "phase": 0,
+      "alive": true,
+      "hit": 0
+    },
+    {
+      "x": 496,
+      "y": 160,
+      "w": 19,
+      "h": 16,
+      "baseY": 160,
+      "kind": "barata",
+      "dir": -1,
+      "hp": 1,
+      "phase": 0,
+      "alive": true,
+      "hit": 0
+    },
+    {
+      "x": 368,
+      "y": 160,
+      "w": 19,
+      "h": 16,
+      "baseY": 160,
+      "kind": "barata",
+      "dir": -1,
+      "hp": 1,
+      "phase": 0,
+      "alive": true,
+      "hit": 0
+    },
+    {
+      "x": 3232,
+      "y": 160,
+      "w": 19,
+      "h": 16,
+      "baseY": 160,
+      "kind": "sapo",
       "dir": -1,
       "hp": 1,
       "phase": 0,
@@ -1785,11 +1744,6 @@
     {
       "x": 448,
       "y": 160,
-      "got": false
-    },
-    {
-      "x": 464,
-      "y": 128,
       "got": false
     },
     {
@@ -1998,31 +1952,6 @@
       "got": false
     },
     {
-      "x": 2784,
-      "y": 112,
-      "got": false
-    },
-    {
-      "x": 2816,
-      "y": 112,
-      "got": false
-    },
-    {
-      "x": 2800,
-      "y": 128,
-      "got": false
-    },
-    {
-      "x": 2768,
-      "y": 128,
-      "got": false
-    },
-    {
-      "x": 2832,
-      "y": 128,
-      "got": false
-    },
-    {
       "x": 2976,
       "y": 160,
       "got": false
@@ -2040,11 +1969,6 @@
     {
       "x": 416,
       "y": 160,
-      "got": false
-    },
-    {
-      "x": 240,
-      "y": 272,
       "got": false
     },
     {
@@ -2218,71 +2142,6 @@
       "got": false
     },
     {
-      "x": 2768,
-      "y": 32,
-      "got": false
-    },
-    {
-      "x": 2800,
-      "y": 32,
-      "got": false
-    },
-    {
-      "x": 2832,
-      "y": 32,
-      "got": false
-    },
-    {
-      "x": 2784,
-      "y": 48,
-      "got": false
-    },
-    {
-      "x": 2816,
-      "y": 48,
-      "got": false
-    },
-    {
-      "x": 2800,
-      "y": 64,
-      "got": false
-    },
-    {
-      "x": 2768,
-      "y": 64,
-      "got": false
-    },
-    {
-      "x": 2832,
-      "y": 64,
-      "got": false
-    },
-    {
-      "x": 2784,
-      "y": 80,
-      "got": false
-    },
-    {
-      "x": 2816,
-      "y": 80,
-      "got": false
-    },
-    {
-      "x": 2800,
-      "y": 96,
-      "got": false
-    },
-    {
-      "x": 2768,
-      "y": 96,
-      "got": false
-    },
-    {
-      "x": 2832,
-      "y": 96,
-      "got": false
-    },
-    {
       "x": 3040,
       "y": 96,
       "got": false
@@ -2361,6 +2220,11 @@
       "x": 1220,
       "y": 116,
       "got": false
+    },
+    {
+      "x": 656,
+      "y": 128,
+      "got": false
     }
   ],
   "holes": [
@@ -2380,18 +2244,25 @@
   "boss": {
     "x": 3392,
     "y": 134,
+    "kind": "sapo_rei",
     "w": 55,
     "h": 53,
-    "dir": -1,
     "hp": 8,
     "maxHp": 8,
-    "hit": 0,
-    "alive": true,
-    "phase": 0,
-    "vy": 0,
-    "grounded": true,
-    "jumpWait": 35
+    "alive": true
   },
+  "bosses": [
+    {
+      "x": 3392,
+      "y": 134,
+      "kind": "sapo_rei",
+      "w": 55,
+      "h": 53,
+      "hp": 8,
+      "maxHp": 8,
+      "alive": true
+    }
+  ],
   "spikes": [],
   "springs": [],
   "items": {
@@ -2404,9 +2275,28 @@
     "shoe": null,
     "cube": {
       "x": 96,
-      "y": 128,
+      "y": 80,
       "w": 22,
       "h": 22
     }
+  },
+  "itemLists": {
+    "pacifier": [
+      {
+        "x": 1728,
+        "y": 112,
+        "w": 22,
+        "h": 22
+      }
+    ],
+    "shoe": [],
+    "cube": [
+      {
+        "x": 96,
+        "y": 80,
+        "w": 22,
+        "h": 22
+      }
+    ]
   }
 }

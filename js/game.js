@@ -1,10 +1,15 @@
 
 (()=>{'use strict';
-const canvas=document.querySelector('#game'),g=canvas.getContext('2d'),W=384,H=216,T=16,$=s=>document.querySelector(s);g.imageSmoothingEnabled=false;
+const canvas=document.querySelector('#game'),g=canvas.getContext('2d'),W=384,H=216,T=16,$=s=>document.querySelector(s);
+// Resolucao interna 2x para sprites HD. Coordenadas e fisica continuam 384x216.
+g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
 const CFG=window.AURORA_CONFIG||{};
-const keys={};let mapWidth=3552,ground=188;let mode='intro',camera=0,score=0,money=0,health=CFG.player.initialHearts,tick=0,last=0,acc=0,sound=true,audio=null,finish=3470,superUnlocked=false,chargeTicks=0,chargeReady=false,chargeHeld=false,chargeMax=CFG.superSpit.chargeMaxFrames,chargeThreshold=CFG.superSpit.chargeFrames,spitKeyWasDown=false,stageReadyAt=0,level=1,levelRewarded=false,pacifier=null,shoe=null,cube=null,magicInvincible=false,doubleJumpUnlocked=false,boss=null;
+const keys={};let cobraDefeats=[],sapoDefeats=[];let mapWidth=3552,ground=188;let mode='intro',camera=0,score=0,money=0,health=CFG.player.initialHearts,tick=0,last=0,acc=0,sound=true,audio=null,finish=3470,superUnlocked=false,chargeTicks=0,chargeReady=false,chargeHeld=false,chargeMax=CFG.superSpit.chargeMaxFrames,chargeThreshold=CFG.superSpit.chargeFrames,spitKeyWasDown=false,stageReadyAt=0,level=1,levelRewarded=false,pacifier=null,shoe=null,cube=null,magicInvincible=false,doubleJumpUnlocked=false,boss=null,bosses=[],itemLists={pacifier:[],shoe:[],cube:[]};
 const player={x:32,y:140,w:17,h:29,vx:0,vy:0,grounded:false,face:1,step:0,cool:0,spitAnim:0,inv:0,coyote:0,jumps:0};
-let blocks=[],ledges=[],enemies=[],coins=[],shots=[],dust=[],holes=[],market=[],spikes=[],springs=[];
+let blocks=[],ledges=[],enemies=[],coins=[],shots=[],dust=[],holes=[],market=[],spikes=[],springs=[],ratDefeats=[];
+function defeatRat(e){if(e.kind==='ratinho')ratDefeats.push({x:e.x,y:e.y,w:e.w,h:e.h,age:0});if(e.kind==='planta')plantDefeats.push({x:e.x,y:e.y,w:e.w,h:e.h,age:0,faceRight:player.x+player.w/2>e.x+e.w/2});}
+const plantDefeats=[];
+
 const itemImages={pacifier:new Image(),shoe:new Image()};
 itemImages.pacifier.src='assets/sprites/itens/super_chupeta.png';
 itemImages.shoe.src='assets/sprites/itens/sapatinho_rosa.png';
@@ -33,13 +38,12 @@ function resumeMusic(){if(sound&&mode==='play')playSound('feira')}
 function build(preserve=false){
  if(!preserve){level=1;superUnlocked=false;doubleJumpUnlocked=false;}
  const data=window.AURORA_LEVELS.load(level,{draftFirst:!!new URLSearchParams(location.search).get('testLevel')});
- blocks=data.blocks;ledges=data.platforms;enemies=data.enemies;coins=data.coins;
- holes=data.holes;spikes=data.spikes||[];springs=data.springs||[];market=[];shots=[];dust=[];
+ blocks=data.blocks;ledges=data.platforms;enemies=data.enemies;for(const e of enemies){const ec=CFG['enemy_'+e.kind];if(ec){e.hp=ec.health;e.maxHp=ec.health;}}coins=data.coins;
+ holes=data.holes;spikes=data.spikes||[];springs=data.springs||[];market=[];shots=[];dust=[];ratDefeats=[];plantDefeats.length=0;
  mapWidth=data.width;ground=data.ground;finish=data.finish;
- pacifier=level===1&&!superUnlocked?data.items.pacifier:null;
- shoe=level===2&&!doubleJumpUnlocked?data.items.shoe:null;
- cube=data.items.cube||null;magicInvincible=false;
- boss=data.boss?{...data.boss,hp:CFG.boss.health,maxHp:CFG.boss.health,dir:-1,hit:0,alive:true,phase:0,vy:0,grounded:true,jumpWait:35}:null;
+ itemLists={pacifier:!superUnlocked?[...(data.itemLists?.pacifier||[])]:[],shoe:!doubleJumpUnlocked?[...(data.itemLists?.shoe||[])]:[],cube:[...(data.itemLists?.cube||[])]};
+ pacifier=itemLists.pacifier[0]||null;shoe=itemLists.shoe[0]||null;cube=itemLists.cube[0]||null;magicInvincible=false;
+ cobraDefeats=[];sapoDefeats=[];bosses=(data.bosses|| (data.boss?[data.boss]:[])).map(b=>{const bc=CFG['boss_'+(b.kind==='cobra_mola'?'cobra_mola':'sapo_rei')];return {...b,hp:bc.health,maxHp:bc.health,dir:-1,hit:0,alive:true,phase:0,vy:0,grounded:false,jumpWait:35};});boss=bosses[0]||null;
  if(!preserve){health=CFG.player.initialHearts;score=0;}
  levelRewarded=false;chargeTicks=0;chargeReady=false;chargeHeld=false;spitKeyWasDown=false;keys.KeyC=false;
  player.x=data.start.x;player.y=data.start.y;player.vx=0;player.vy=0;player.face=1;player.inv=0;
@@ -55,16 +59,16 @@ function updateMenuSelection(){document.querySelectorAll('.menu-option').forEach
 function goFromSplash(){if(transitioning)return;transitioning=true;mode='menu';showFront('mainMenu');updateMenuSelection();setTimeout(()=>{transitioning=false},420)}
 function menuChoose(){if(transitioning)return;if(frontScreen==='mainMenu'){if(menuIndex===0)start();else showFront(menuIndex===1?'howTo':'credits')}else if(frontScreen==='howTo'||frontScreen==='credits')showFront('mainMenu')}
 function start(){stopCredits();front.classList.add('is-hidden');build(false);mode='play';$('#overlay').style.display='none';acc=0;last=performance.now();requestAnimationFrame(loop);playSound('feira')}
-function unlockSuper(){if(superUnlocked)return;superUnlocked=true;pacifier=null;mode='power';pauseMusic();overlay('★ CHUPETA DO SUPER CUSPE! ★','NOVO PODER! Segure C para CARREGAR e SOLTE para disparar. O Super Cuspe pode derrotar ate 2 inimigos no mesmo disparo e destroi ate 4 blocos. Toque C rapidamente para cuspir normalmente.','APERTE C');$('#sub').textContent='APERTE C PARA CONTINUAR';}
+function unlockSuper(){if(superUnlocked)return;superUnlocked=true;itemLists.pacifier=[];pacifier=null;mode='power';pauseMusic();overlay('★ CHUPETA DO SUPER CUSPE! ★','NOVO PODER! Segure C para CARREGAR e SOLTE para disparar. O Super Cuspe pode derrotar ate 2 inimigos no mesmo disparo e destroi ate 4 blocos. Toque C rapidamente para cuspir normalmente.','APERTE C');$('#sub').textContent='APERTE C PARA CONTINUAR';}
 function unlockDoubleJump(){
  if(doubleJumpUnlocked||level!==2)return;
- doubleJumpUnlocked=true;shoe=null;mode='power';pauseMusic();
+ doubleJumpUnlocked=true;itemLists.shoe=[];shoe=null;mode='power';pauseMusic();
  overlay('★ SAPATINHO ROSA! ★','PULO DUPLO DESBLOQUEADO! Aperte Z ou ↑ para pular e aperte novamente enquanto estiver no ar para dar o segundo salto.','APERTE Z');
  $('#sub').textContent='APERTE Z OU ↑ PARA CONTINUAR';
 }
 function unlockMagicCube(){
  if(magicInvincible)return;
- magicInvincible=true;cube=null;updateHud();
+ magicInvincible=true;itemLists.cube=[];cube=null;updateHud();
  spark(player.x+8,player.y+12,'#e6b4ff',32);
  sfx(880,.24,'triangle',.055);
 }
@@ -123,7 +127,7 @@ function showFinalCredits(){
  const content=$('#creditsContent');content.textContent=window.AURORA_CREDITS.load();
  const lines=content.textContent.split('\n').length;
  // V28.1: duração reduzida pela metade em relação à V28.
- creditsScroll.style.setProperty('--credits-duration',Math.max(75,lines*1.75)/2+'s');
+ creditsScroll.style.setProperty('--credits-duration',Math.max(75,lines*1.75)/2/CFG.credits.speedMultiplier+'s');
  creditsScroll.style.animation='none';void creditsScroll.offsetHeight;
  creditsScroll.style.animation='';
  creditsAccelerating=false;
@@ -166,7 +170,7 @@ function enemyBlocked(e,nextX,nextY){
 function enemyAhead(e,nextX,nextY){
  const probe={x:nextX,y:nextY,w:e.w,h:e.h};
  return enemies.find(other=>other!==e&&other.alive&&rect(probe,other)) ||
- (boss&&boss.alive&&rect(probe,boss)?boss:null);
+ (bosses.find(b=>b.alive&&rect(probe,b))||null);
 }
 function moveEnemy(e,speed,nextY){
  const nextX=e.x+e.dir*speed;
@@ -231,7 +235,7 @@ function collideBlocksX(oldX){
 function collideBlocksY(oldY){
  for(const b of blocks){if(!b.alive||!rect(player,b))continue;
   if(player.vy>=0&&oldY+player.h<=b.y+4){player.y=b.y-player.h;player.vy=0;player.grounded=true;player.jumps=0;}
-  else if(player.vy<0&&oldY>=b.y+b.h-4){player.y=b.y+b.h;player.vy=0;}
+  else if(player.vy<0&&oldY>=b.y+b.h-4){player.y=b.y+b.h;player.vy=0;if(b.type!==3){b.alive=false;score+=CFG.rewards.blockPoints;spark(b.x+8,b.y+8,'#d88b4a',13);sfx(370,.08);}}
   else {player.y=oldY;player.vy=0;}
  }
 }
@@ -268,50 +272,93 @@ for(const spring of springs){
 if(player.grounded&&Math.abs(player.vx)>.2)player.step+=Math.abs(player.vx)*.17;
 if(player.inv>0)player.inv--;
 for(const c of coins){if(!c.got&&rect(player,{x:c.x,y:c.y,w:9,h:11})){c.got=true;money++;score+=CFG.rewards.coinPoints;sfx(850,.05);if(money===coins.length)awardCoins()}}
-if(pacifier&&rect(player,pacifier))unlockSuper();if(shoe&&rect(player,shoe))unlockDoubleJump();
-if(cube&&rect(player,cube))unlockMagicCube();
+if(itemLists.pacifier.some(it=>rect(player,it)))unlockSuper();
+if(itemLists.shoe.some(it=>rect(player,it)))unlockDoubleJump();
+if(itemLists.cube.some(it=>rect(player,it)))unlockMagicCube();
 for(const e of enemies){if(!e.alive)continue;e.phase+=.06;if(e.hit>0)e.hit--;
 
-const speed=e.kind==='planta'?0:e.kind==='ratinho'?.85:e.kind==='lesma'?.18:e.kind==='besouro'?.6:.42;
-const nextY=e.kind==='joaninha'?e.baseY+Math.sin(e.phase)*14:e.kind==='sapo'?e.baseY-Math.max(0,Math.sin(e.phase))*20:e.baseY;
+const ec=CFG['enemy_'+e.kind];const speed=ec?ec.speed:.42;
+const flying=e.kind==='joaninha';
+ if(!flying){
+  const bottom=e.y+e.h;let surface=ground;
+  for(const k of blocks)if(k.alive&&e.x+e.w>k.x+2&&e.x<k.x+k.w-2&&k.y>=bottom-2&&k.y<surface)surface=k.y;
+  for(const k of ledges)if(e.x+e.w>k.x+2&&e.x<k.x+k.w-2&&k.y>=bottom-2&&k.y<surface)surface=k.y;
+  if(!groundExists(e.x+e.w/2)&&surface===ground)surface=H+70;
+  const target=surface-e.h;
+  e.baseY=e.y=Math.min(target,e.y+Math.min(7,(e.fallSpeed=(e.fallSpeed||0)+(ec?ec.gravity:CFG.enemies.fallGravity))));
+  if(e.y>=target)e.fallSpeed=0;
+ }
+ // Planta: dorme longe, desperta ao aproximar, e volta a dormir ao se afastar.
+ if(e.kind==='planta'){
+   const dist=Math.abs((player.x+player.w/2)-(e.x+e.w/2));
+   const wake=Number(ec?.wakeDistance)||145, sleep=Math.max(wake+15,Number(ec?.sleepDistance)||190);
+   if(e.plantAwake===undefined){e.plantAwake=false;e.plantAnim=0;}
+   if(!e.plantAwake&&dist<=wake){e.plantAwake=true;e.plantAnim=0;}
+   else if(e.plantAwake&&dist>=sleep){e.plantAwake=false;e.plantAnim=0;}
+   else e.plantAnim=(e.plantAnim||0)+1;
+ }
+ const nextY=flying?e.baseY+Math.sin(e.phase)*14:e.kind==='sapo'?e.baseY-Math.max(0,Math.sin(e.phase))*20:e.baseY;
 // Primeiro testa a parede; só depois atualiza a posição do inimigo.
-if(e.kind!=='planta')moveEnemy(e,speed,nextY);
+if(e.kind==='ratinho'){
+  const dx=player.x+player.w/2-(e.x+e.w/2);
+  // Fica tranquilo até Aurora se aproximar; foge na direção oposta.
+  e.ratRunning=Math.abs(dx)<135;
+  if(e.ratRunning){e.dir=dx<0?1:-1;moveEnemy(e,speed*CFG.enemies.speedMultiplier,nextY);}
+ }else if(e.kind!=='planta')moveEnemy(e,speed*CFG.enemies.speedMultiplier,nextY);
 // Inimigos voadores ou saltadores também não podem atravessar um bloco na vertical.
 if(e.kind==='planta'||(!enemyBlocked(e,e.x,nextY)&&!enemyAhead(e,e.x,nextY)))e.y=nextY;
 if(e.x<30){e.x=30;e.dir=1}else if(e.x>mapWidth-50){e.x=mapWidth-50;e.dir=-1;}
-if(rect(player,e)){if(magicInvincible){defeatOnContact(e);continue;}if(e.kind!=='planta'&&player.vy>1&&oldY+player.h<=e.y+7){e.hp=0;player.vy=-4.6;score+=100;}else damage()}
-if(e.hp<=0){e.alive=false;spark(e.x+9,e.y+8,'#ff8aa2',10)}}
+if(rect(player,e)){if(magicInvincible){defeatOnContact(e);continue;}if(player.vy>1&&oldY+player.h<=e.y+7){const hit=ec?ec.stompDamage:1;if(hit>0){e.hp=Math.max(0,e.hp-hit);e.hit=8;score+=100;player.vy=-4.6;}else {player.vy=-4.6;damage();}}else damage()}
+if(e.hp<=0){defeatRat(e);e.alive=false;spark(e.x+9,e.y+8,'#ff8aa2',10)}}
 // Super Sapo Rei: salta em direcao a Aurora.
-if(boss&&boss.alive){
- const b=boss; b.phase+=.075;if(b.hit>0)b.hit--;
- const distance=player.x+player.w/2-(b.x+b.w/2);b.dir=distance<0?-1:1;
+for(const b of bosses)if(b.alive){ const bc=CFG['boss_'+(b.kind==='cobra_mola'?'cobra_mola':'sapo_rei')];b.phase+=.075;if(b.hit>0)b.hit--;
+ const distance=player.x+player.w/2-(b.x+b.w/2);
+ // Ambos os chefes fixam direção e velocidade horizontal na decolagem.
+ // Aurora pode passar por baixo sem o chefe inverter a queda.
+ if(b.grounded)b.dir=distance<0?-1:1;
  if(b.grounded){
    b.vy=0;
-   if(Math.abs(distance)<370&&--b.jumpWait<=0){b.vy=-7.6;b.grounded=false;b.jumpWait=66;spark(b.x+b.w/2,b.y+b.h,'#a1f68a',9)}
+   if(Math.abs(distance)<370&&--b.jumpWait<=0){
+     b.jumpDir=b.dir;
+     b.jumpVx=Math.abs(distance)>18?b.dir*(b.kind==='cobra_mola'?2.15:1.65)*bc.moveSpeed:0;
+     b.vy=-bc.jumpForce;b.grounded=false;b.jumpWait=bc.jumpInterval;
+     spark(b.x+b.w/2,b.y+b.h,'#a1f68a',9);
+   }
  }
  if(!b.grounded){
-   const oldY=b.y;let nx=Math.max(0,Math.min(mapWidth-b.w,b.x+b.dir*(Math.abs(distance)>18?1.65:0)));
+   const oldY=b.y;
+   const dx=b.jumpVx??0;
+   let nx=Math.max(0,Math.min(mapWidth-b.w,b.x+dx));
    if(!blocks.some(k=>k.alive&&rect({x:nx,y:b.y,w:b.w,h:b.h},k)))b.x=nx;
-   b.vy=Math.min(8,b.vy+.34);b.y+=b.vy;
+   b.vy=Math.min(8,b.vy+bc.gravity);b.y+=b.vy;
    if(b.vy>=0){
      for(const k of blocks){if(k.alive&&b.x+b.w>k.x&&b.x<k.x+k.w&&oldY+b.h<=k.y&&b.y+b.h>=k.y){b.y=k.y-b.h;b.vy=0;b.grounded=true;break}}
      if(!b.grounded&&oldY+b.h<=ground&&b.y+b.h>=ground&&groundExists(b.x+b.w/2)){b.y=ground-b.h;b.vy=0;b.grounded=true}
    }
    if(b.y>H+50){b.x=Math.max(0,Math.min(mapWidth-b.w,finish-130));b.y=ground-b.h;b.vy=0;b.grounded=true;b.jumpWait=35}
  }
- if(rect(player,b)){if(magicInvincible){b.alive=false;b.hp=0;score+=CFG.rewards.bossPoints;spark(b.x+24,b.y+20,'#dca5ff',45);}else damage();if(!magicInvincible&&oldX+player.w<=b.x+5){player.x=b.x-player.w;player.vx=0}else if(!magicInvincible&&oldX>=b.x+b.w-5){player.x=b.x+b.w;player.vx=0}}
+ if(rect(player,b)){
+  if(magicInvincible){b.alive=false;b.hp=0;recordBossDefeat(b);score+=CFG.rewards.bossPoints;spark(b.x+24,b.y+20,'#dca5ff',45);}
+  else if(player.vy>0.8&&oldY+player.h<=b.y+Math.min(15,b.h*.28)){
+   // Pisão válido apenas se o perfil do chefão permitir dano por cabeçada/pisão.
+   if(bc.stompDamage>0){b.hp=Math.max(0,b.hp-bc.stompDamage);b.hit=13;spark(b.x+b.w/2,b.y,'#ffdf8d',14);sfx(570,.1,'triangle');if(!b.hp){b.alive=false;recordBossDefeat(b);score+=CFG.rewards.bossPoints;}}
+   else damage();
+   player.y=b.y-player.h;player.vy=-5.2;player.grounded=false;
+  }else damage();
+  if(!magicInvincible&&oldX+player.w<=b.x+5){player.x=b.x-player.w;player.vx=0}else if(!magicInvincible&&oldX>=b.x+b.w-5){player.x=b.x+b.w;player.vx=0}
+ }
 }
  for(let i=shots.length-1;i>=0;i--){let p=shots[i];p.x+=p.vx;p.life--;p.age++;if(p.age%3===0)spark(p.x-p.dir*3,p.y+2,'#8bdfff',1);let hit=false;
 for(const b of blocks){if(!b.alive||!rect(p,b))continue;if(b.type===3){hit=true;spark(p.x,p.y,'#d8f1ff',8);sfx(290,.08);break;}b.hp=p.power?0:b.hp-CFG.normalSpit.blockDamage;hit=true;spark(p.x,p.y,p.power?'#ffe67a':'#aef7ff');if(b.hp<=0){b.alive=false;score+=CFG.rewards.blockPoints;spark(b.x+8,b.y+8,'#d88b4a',13);sfx(370,.08)}p.blocksLeft--;if(p.blocksLeft>0){hit=false;continue;}break}
-if(!hit&&boss&&boss.alive&&rect(p,boss)){
-   hit=true;boss.hp=Math.max(0,boss.hp-(p.power?CFG.superSpit.bossDamage:CFG.normalSpit.bossDamage));boss.hit=13;
+if(!hit)for(const b of bosses){if(!b.alive||!rect(p,b))continue;
+   hit=true;const bc=CFG['boss_'+(b.kind==='cobra_mola'?'cobra_mola':'sapo_rei')];const dmg=p.power?bc.superSpitDamage:bc.normalSpitDamage;if(dmg>0){b.hp=Math.max(0,b.hp-dmg);b.hit=13;}
    spark(p.x,p.y,'#8deaff',15);
-   if(boss.hp===0){boss.alive=false;score+=CFG.rewards.bossPoints;spark(boss.x+24,boss.y+20,'#8af5a3',45);sfx(520,.28,'triangle',.04);}
+   if(b.hp===0){b.alive=false;recordBossDefeat(b);score+=CFG.rewards.bossPoints;spark(b.x+b.w/2,b.y+b.h/2,'#8af5a3',45);sfx(520,.28,'triangle',.04);}break;
  }
- if(!hit)for(const e of enemies){if(e.alive&&rect(p,e)){e.hp=p.power?e.hp-CFG.superSpit.enemyDamage:e.hp-CFG.normalSpit.enemyDamage;e.hit=8;spark(p.x,p.y,'#b9faff');if(e.hp<=0){e.alive=false;score+=CFG.rewards.enemyPoints;spark(e.x+8,e.y+8,'#ffb76b',12);}p.enemiesLeft--;hit=p.enemiesLeft<=0;break}}
+ if(!hit)for(const e of enemies){if(e.alive&&rect(p,e)){const ec=CFG['enemy_'+e.kind];e.hp-=Math.round((p.power?CFG.superSpit.enemyDamage:CFG.normalSpit.enemyDamage)*(ec?ec.spitDamageMultiplier:1));e.hit=8;spark(p.x,p.y,'#b9faff');if(e.hp<=0){defeatRat(e);e.alive=false;score+=CFG.rewards.enemyPoints;spark(e.x+8,e.y+8,'#ffb76b',12);}p.enemiesLeft--;hit=p.enemiesLeft<=0;break}}
 if(hit||p.life<=0||p.x<0||p.x>mapWidth)shots.splice(i,1)}
 for(let i=dust.length-1;i>=0;i--){let d=dust[i];d.x+=d.vx;d.y+=d.vy;d.vy+=.14;if(--d.life<=0)dust.splice(i,1)}
-camera=Math.max(0,Math.min(mapWidth-W,player.x-110));if(player.x>finish&&(!boss||!boss.alive)){score+=CFG.rewards.stagePoints;if(level<window.AURORA_LEVELS.MAX_LEVEL)nextLevel();else finalVictory()}updateHud();}
+camera=Math.max(0,Math.min(mapWidth-W,player.x-CFG.camera.followOffset));if(player.x>finish&&bosses.every(b=>!b.alive)){score+=CFG.rewards.stagePoints;if(level<window.AURORA_LEVELS.MAX_LEVEL)nextLevel();else finalVictory()}updateHud();}
 function sky(){
  if(marketBackground.complete&&marketBackground.naturalWidth){
    const srcW=1120,srcH=550;
@@ -406,15 +453,40 @@ for(const b of blocks){
 }
 
 function enemyDraw(e){
+ if(e.kind==='barata'||e.kind==='baratinha'){
+  // A barata antiga nao deve ser exibida: usar exclusivamente os PNGs da Baratinha.
+  const action=e.hit>0?'hurt':'walk';
+  const frame=action==='hurt'?Math.floor(tick/4)%2:Math.floor(tick/7)%4;
+  const key='baratinha_'+action+(e.dir>0?'_direita':'');
+  const drawn=sprite(g,key,frame,e.x-9,e.y-13,e.w+18,e.h+17,false,true);
+  if(!drawn){
+    // Enquanto a imagem carrega, nao substituir pelo antigo sprite de barata.
+    return;
+  }
+  return;
+ }
  if(e.kind==='ratinho'){
-  const x=Math.round(e.x),y=Math.round(e.y),leg=tick%12<6?1:0;
-  r(x+2,y+6,16,9,'#7e8797');r(x+4,y+2,11,9,'#a7afba');
-  r(x+2,y,5,5,'#9da6b4');r(x+12,y,5,5,'#9da6b4');
-  r(x+6,y+5,11,4,'#151b2d');r(x+7,y+6,3,2,'#5b708b');r(x+13,y+6,3,2,'#5b708b');
-  r(x+17,y+9,3,3,'#eaa4a7');r(x+3,y+14,4,2,'#555c70');r(x+12+leg,y+14,4,2,'#555c70');
-  r(x-4,y+9,6,2,'#b5bdc7');return;
+  const action=e.hit>0?'hurt':e.ratRunning?'run':'idle';
+  const frame=action==='run'?Math.floor(tick/4)%8:action==='hurt'?Math.floor(tick/4)%2:Math.floor(tick/16)%4;
+  if(sprite(g,'ratinho_'+action,frame,e.x-8,e.y-11,e.w+16,e.h+14,e.dir<0))return;
  }
  if(e.kind==='planta'){
+  // O vaso usa o mesmo ponto de apoio em todas as poses e direções.
+  // Dorme fora do raio de detecção; desperta e alterna abertura/fechamento perto de Aurora.
+  const age=e.plantAnim||0;
+  let action,frame;
+  if(e.hit>0){action='hurt';frame=Math.floor(tick/4)%2;}
+  else if(!e.plantAwake){action='idle';frame=Math.floor(tick/20)%4;}
+  else if(age<18){action='opening';frame=Math.min(2,Math.floor(age/6));}
+  else {
+   const cycle=(age-18)%64;
+   if(cycle<12){action='opening';frame=Math.min(2,Math.floor(cycle/4));}
+   else if(cycle<34){action='open';frame=Math.floor((cycle-12)/8)%3;}
+   else if(cycle<46){action='opening';frame=Math.max(0,2-Math.floor((cycle-34)/4));}
+   else {action='idle';frame=Math.floor((cycle-46)/6)%4;}
+  }
+  const plantFacesRight=player.x+player.w/2>e.x+e.w/2;
+  if(sprite(g,'planta_'+action+(plantFacesRight?'_direita':''),frame,e.x-9,e.y-10,e.w+18,e.h+12,false,true))return;
   const x=Math.round(e.x),y=Math.round(e.y),open=Math.sin(e.phase*1.4)>0;
   r(x+2,y+19,20,11,'#256b45');r(x,y+18,24,4,'#64c26c');
   r(x+5,y+23,14,5,'#389957');r(x+11,y+11,3,9,'#28874a');
@@ -433,24 +505,44 @@ if(k==='lesma'){r(x+1,y+11,17,5,'#eab184');r(x+4,y+7,12,6,'#cf3ca7');r(x+12,y+3,
 if(k==='besouro'){r(x+2,y+5,15,10,'#1b4d9a');r(x+4,y+3,11,8,'#357ed0');r(x+3,y+12,3,4,'#e4b052');r(x+13,y+12,3,4,'#e4b052');r(x+9,y+7,9,6,'#f3d25d');r(x+10,y+8,7,4,'#20273e');r(x+11,y+9,2,2,'#e2faff');r(x+15,y+9,2,2,'#e2faff')}
 if(k==='caranguejo'){r(x+3,y+7,13,7,'#e8494e');r(x+5,y+4,10,7,'#ff7860');r(x,y+3,5,6,'#dc3948');r(x+15,y+3,5,6,'#dc3948');r(x+6,y+1,4,5,'#fff');r(x+12,y+1,4,5,'#fff');r(x+8,y+3,2,2,'#2c2643');r(x+14,y+3,2,2,'#2c2643');r(x+4,y+14,3,2,'#ba3845');r(x+12,y+14,3,2,'#ba3845')}
 }
+function recordBossDefeat(b){
+ const target=b.kind==='cobra_mola'?cobraDefeats:sapoDefeats;
+ target.push({x:b.x,y:b.y,w:b.w,h:b.h,dir:b.dir,age:0});
+}
 function drawBoss(){
- if(!boss||!boss.alive)return;
- const b=boss,x=Math.round(b.x),y=Math.round(b.y);
- if(b.hit>0&&tick%4<2)return;
- // Sprite do sapo inimigo ampliado, com coroa de rei.
- if(!sprite(g,'sapo',Math.floor(b.phase*1.5)%3,x-6,y-9,b.w+12,b.h+13,b.dir<0)){
-   r(x+5,y+16,b.w-10,b.h-19,'#226c3d');r(x+9,y+12,b.w-18,b.h-18,'#65d65c');
-   r(x+10,y+8,12,13,'#fff');r(x+b.w-22,y+8,12,13,'#fff');
-   r(x+16,y+13,4,5,'#24313c');r(x+b.w-18,y+13,4,5,'#24313c');
+ for(let i=sapoDefeats.length-1;i>=0;i--){
+  const d=sapoDefeats[i];d.age++;
+  const frame=Math.min(3,Math.floor(d.age/8));
+  sprite(g,'sapo_rei_defeat'+(d.dir>0?'_direita':''),frame,Math.round(d.x)-6,Math.round(d.y)-22,d.w+12,d.h+27,false,true);
+  if(d.age>36)sapoDefeats.splice(i,1);
  }
- const cx=x+Math.floor(b.w/2);
- r(cx-15,y-10,30,10,'#51351d');r(cx-13,y-9,26,7,'#f6c83d');
- r(cx-14,y-17,7,9,'#f6c83d');r(cx-3,y-22,7,14,'#ffdf55');r(cx+8,y-17,7,9,'#f6c83d');
- r(cx-10,y-7,5,4,'#e04a50');r(cx+5,y-7,5,4,'#e04a50');r(cx-2,y-7,4,4,'#fff3a6');
+ for(let i=cobraDefeats.length-1;i>=0;i--){
+  const d=cobraDefeats[i];d.age++;
+  const frame=Math.min(3,Math.floor(d.age/8));
+  sprite(g,'cobra_mola_defeat',frame,Math.round(d.x)-9,Math.round(d.y)-10,d.w+18,d.h+14,d.dir>0,true);
+  if(d.age>36)cobraDefeats.splice(i,1);
+ }
+ for(const b of bosses){if(!b.alive)continue;const x=Math.round(b.x),y=Math.round(b.y);
+ if(b.hit>0&&tick%4<2)continue;
+ if(b.kind==='cobra_mola'){
+  // PNGs aprovados: animações reais, sem substituição por desenho geométrico.
+  const action=b.hit>0?'hurt':!b.grounded?'attack':'idle';
+  const frame=action==='hurt'?Math.floor(tick/5)%2:Math.floor(b.phase*(action==='attack'?5:2))%4;
+  const drawn=sprite(g,'cobra_mola_'+action,frame,x-9,y-10,b.w+18,b.h+14,b.dir>0,true);
+  if(!drawn){r(x+8,y+4,b.w-16,b.h-8,'#d52d36');r(x+3,y+26,Math.floor(b.w*.52),b.h-30,'#986032');}
+  r(x+1,y-34,b.w-2,8,'#12192d');r(x+3,y-32,Math.round((b.w-6)*b.hp/b.maxHp),4,'#8ce64f');
+  text('COBRA MOLA',x+8,y-47,'#fff2a5',8);continue;
+ }
+ // Sprites HD exclusivos do Sapo Rei, sem sobrepor coroa geométrica.
+ const action=b.hit>0?'hurt':!b.grounded?'attack':'idle';
+ const frame=action==='hurt'?Math.floor(tick/5)%2:Math.floor(b.phase*(action==='attack'?5:2))%4;
+ const rendered=sprite(g,'sapo_rei_'+action+(b.dir>0?'_direita':''),frame,x-6,y-22,b.w+12,b.h+27,false,true);
+ if(!rendered){r(x+5,y+12,b.w-10,b.h-13,'#75d946');r(x+8,y+8,b.w-16,13,'#f9d94b');}
  if(!b.grounded)r(x+8,ground+1,b.w-16,3,'#46372d');
- r(x+1,y-34,b.w-2,8,'#12192d');r(x+3,y-32,b.w-6,4,'#543a46');
+ r(x+1,y-34,b.w-2,8,'#12192d');
  r(x+3,y-32,Math.round((b.w-6)*b.hp/b.maxHp),4,'#8ce64f');
  text('SUPER SAPO REI',x-15,y-47,'#fff2a5',8);
+}
 }
 function aurora(){if(player.inv>0&&tick%6<3)return;const moving=player.grounded&&Math.abs(player.vx)>.25;const action=player.inv>0?'hurt':player.spitAnim>0?'spit':!player.grounded?'jump':moving?(Math.abs(player.vx)>1.8?'run':'walk'):'idle';const animFrame=action==='jump'?(player.vy<0?2:4):action==='spit'?Math.min(4,Math.floor((13-player.spitAnim)/2.6)):Math.floor(action==='idle'?tick/18:player.step*1.7);
 if(sprite(g,'aurora_'+action,animFrame,player.x-9,player.y-16,36,48,player.face<0))return;let x=Math.round(player.x),y=Math.round(player.y),walk=player.grounded&&Math.abs(player.vx)>.25,leg=walk?Math.round(Math.sin(player.step)*3):0;
@@ -462,7 +554,7 @@ r(0,14,3,7,colors.skin);r(15,14,3,7,colors.skin);r(2,4,14,11,colors.skin);r(1,7,
 r(10,7,4,5,'#fff');r(12,8,2,3,'#242038');r(13,11,4,2,'#e78b8f');r(16,11,3,4,'#52243d');r(17,13,2,1,'#ff82a7');
 r(3,2,13,2,'#f4faff');r(9,0,4,4,colors.bow);r(13,0,4,4,colors.bow);r(12,1,2,2,'#fff');g.restore()}
 function render(){sky();g.save();g.translate(-Math.floor(camera),0);terrain();pitVisual();for(const c of coins){if(c.got)continue;let bob=Math.round(Math.sin(tick*.12+c.x)*2);let cw=[9,7,4,7][Math.floor((tick+c.x)/9)%4],cx=c.x+Math.floor((9-cw)/2);r(cx,c.y+bob,cw,12,'#b76b18');r(cx+1,c.y+bob+1,Math.max(1,cw-2),10,'#ffd232');if(cw>=7){r(cx+3,c.y+bob+2,3,7,'#fff19b');r(cx+2,c.y+bob+3,1,5,'#e49a21')}else r(cx+1,c.y+bob+2,2,7,'#fff2a0')}
-if(pacifier){
+for(const pacifier of itemLists.pacifier){
  const y=pacifier.y+Math.round(Math.sin(tick*.1)*2);
  if(itemImages.pacifier.complete&&itemImages.pacifier.naturalWidth)g.drawImage(itemImages.pacifier,pacifier.x,y,pacifier.w,pacifier.h);
  else{
@@ -472,7 +564,7 @@ if(pacifier){
  }
  if(tick%16<8){r(pacifier.x-3,y+2,3,3,'#fff6a6');r(pacifier.x+pacifier.w+1,y+5,3,3,'#fff6a6')}
 }
-if(cube){
+for(const cube of itemLists.cube){
  const x=Math.round(cube.x),y=Math.round(cube.y+Math.sin(tick*.1)*2);
  r(x-2,y-2,26,26,'#43286b');r(x,y,22,22,'#9d63e8');
  const palette=['#fff2a2','#75d5ff','#ff88b7','#9df8a7','#f9f5ff','#ffa857'];
@@ -482,12 +574,25 @@ if(cube){
  }
  if(tick%16<8){r(x-5,y+4,3,3,'#fff1a8');r(x+24,y+14,3,3,'#fff1a8')}
 }
-if(shoe){
+for(const shoe of itemLists.shoe){
  const y=shoe.y+Math.round(Math.sin(tick*.1)*2);
  if(itemImages.shoe.complete&&itemImages.shoe.naturalWidth)g.drawImage(itemImages.shoe,shoe.x,y,shoe.w,shoe.h);
  if(tick%16<8){r(shoe.x-3,y+2,3,3,'#fff6a6');r(shoe.x+shoe.w+1,y+5,3,3,'#fff6a6')}
 }
-for(const e of enemies)if(e.alive)enemyDraw(e);drawBoss();for(const p of shots){
+for(const e of enemies)if(e.alive)enemyDraw(e);
+ for(let i=ratDefeats.length-1;i>=0;i--){
+  const d=ratDefeats[i];d.age++;
+  const frame=Math.min(3,Math.floor(d.age/9));
+  sprite(g,'ratinho_defeat',frame,d.x-8,d.y-11,d.w+16,d.h+14,false);
+  if(d.age>=42)ratDefeats.splice(i,1);
+ }
+ for(let i=plantDefeats.length-1;i>=0;i--){
+  const d=plantDefeats[i];d.age++;
+  const frame=Math.min(1,Math.floor(d.age/15));
+  sprite(g,'planta_defeat'+(d.faceRight?'_direita':''),frame,d.x-9,d.y-10,d.w+18,d.h+12,false,true);
+  if(d.age>=36)plantDefeats.splice(i,1);
+ }
+ drawBoss();for(const p of shots){
  // Gota animada em três quadros, com reflexo e pequenas partículas.
  const pulse=Math.floor(p.age/3)%3;
  if(p.power){const cx=p.x+7,cy=p.y+7;r(cx-8,cy-4,17,9,'#124c92');r(cx-4,cy-8,9,17,'#124c92');r(cx-6,cy-6,13,13,'#288fd4');r(cx-4,cy-5,9,10,'#60d5ff');r(cx-3,cy-5,5,3,'#e2ffff');r(p.x-p.dir*5,p.y+6,4,3,'#55b9f5');continue;}r(p.x-p.dir*3,p.y+2,3,2,'#4ab8ee');
@@ -543,7 +648,27 @@ $('#creditsReplay').addEventListener('click',()=>{if(mode==='finalCredits')showF
 $('#creditsMenu').addEventListener('click',()=>{showSplashAfterCredits()});
 $('#creditsSound').addEventListener('click',()=>{sound=!sound;$('#creditsSound').textContent=sound?'♫ SOM ON':'♫ SOM OFF';if(sound)playCreditsMusic();else creditsMusic.pause()});
 $('#pause').addEventListener('click',()=>{if(mode==='play'||mode==='pause')togglePause()});$('#sound').addEventListener('click',()=>{sound=!sound;$('#sound').textContent=sound?'♫ SOM ON':'♫ SOM OFF';if(sound){resumeMusic();sfx(700,.06)}else pauseMusic()});
-for(const b of document.querySelectorAll('[data-k]')){const code=b.dataset.k;b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);keys[code]=true});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,e=>{e.preventDefault();keys[code]=false})}
+const touchPointers=new Map();
+ function virtualDown(code){
+  if(mode==='intro'){goFromSplash();frontWaitRelease=false;return}
+  if(mode==='menu'){
+   if(code==='ArrowLeft'||code==='ArrowUp'){menuIndex=(menuIndex+2)%3;updateMenuSelection();return}
+   if(code==='ArrowRight'){menuIndex=(menuIndex+1)%3;updateMenuSelection();return}
+   if(code==='KeyZ'||code==='KeyC'){menuChoose();return}return;
+  }
+  if(mode==='power'){resumePower();return}
+  if(mode==='stage'){resumeStage();return}
+  if(mode==='pause'){togglePause();return}
+  if(mode==='lost'||mode==='win'){showMenu();return}
+  if(mode==='finalCredits'){if(code==='KeyZ')setCreditsAcceleration(true);return}
+  if(mode==='play')keys[code]=true;
+ }
+ for(const b of document.querySelectorAll('[data-k]')){
+  b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);touchPointers.set(e.pointerId,b.dataset.k);virtualDown(b.dataset.k)});
+  const release=e=>{e.preventDefault();const code=touchPointers.get(e.pointerId);if(!code)return;touchPointers.delete(e.pointerId);if(![...touchPointers.values()].includes(code))keys[code]=false;if(code==='KeyZ'&&mode==='finalCredits')setCreditsAcceleration(false)};
+  for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,release);
+ }
+
 const testParams=new URLSearchParams(location.search);
 const testLevel=testParams.get('testLevel');
 if(/^[1-6]$/.test(testLevel||'')){

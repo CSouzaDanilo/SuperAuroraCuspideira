@@ -1,0 +1,1 @@
+V29.3.1 - Correção dos 18 quadros do Ratinho: recorte individual completo do spritesheet aprovado, área transparente padronizada 320x190 e alinhamento pela base. Nenhuma alteração nas regras de jogo ou nas seis fases JSON.

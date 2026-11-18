@@ -1,28 +1,34 @@
 // Sprites carregados como arquivos PNG locais. Sem dependências externas.
 const SPRITES = {};
-const NEW_ENEMIES = {barata:4,joaninha:4,caramujo:4,besouro:4};
-const CURATED = {barata:4,joaninha:5,caramujo:3,sapo:3,lesma:2,besouro:4,caranguejo:2};
+const NEW_ENEMIES = {joaninha:4,caramujo:4,besouro:4};
+const RAT_FRAMES={idle:4,run:8,hurt:2,defeat:4};
+const CURATED = {joaninha:5,caramujo:3,sapo:3,lesma:2,besouro:4,caranguejo:2};
 function loadSprites(){
   const groups = {
     aurora: {idle:5,walk:6,run:5,jump:6,spit:5,hurt:5,victory:3},
-    inimigos: {barata:7,caranguejo:6,sapo:8,caramujo:7,lesma:6,joaninha:7,besouro:7,espinho:2}
+    ratinho: {idle:4,run:8,hurt:2,defeat:4},
+    planta: {idle:4,opening:3,open:3,hurt:2,defeat:2},
+    cobra_mola: {idle:4,attack:4,hurt:2,defeat:4},
+    sapo_rei: {idle:4,attack:4,hurt:2,defeat:4},
+    baratinha: {walk:4,hurt:2,defeat:4},
+    inimigos: {caranguejo:6,sapo:8,caramujo:7,lesma:6,joaninha:7,besouro:7,espinho:2}
   };
   for(const [folder,types] of Object.entries(groups)){
     for(const [name,count] of Object.entries(types)){
-      const key=folder==='aurora'?'aurora_'+name:name;
-      SPRITES[key]=[];
+      const key=folder==='aurora'?'aurora_'+name:folder==='ratinho'?'ratinho_'+name:folder==='planta'?'planta_'+name:folder==='cobra_mola'?'cobra_mola_'+name:folder==='sapo_rei'?'sapo_rei_'+name:folder==='baratinha'?'baratinha_'+name:name;
+      SPRITES[key]=[];if(folder==='planta'||folder==='sapo_rei'||folder==='baratinha')SPRITES[key+'_direita']=[];
       for(let i=0;i<count;i++){
         const img=new Image();
-        img.src=folder==='inimigos' && NEW_ENEMIES[name] ? `assets/sprites/novos/${name}/${name}_${String(i % NEW_ENEMIES[name]).padStart(2,'0')}.png` : folder==='inimigos' && CURATED[name] ? `assets/sprites/refinados/${name}/${name}_${String(i % CURATED[name]).padStart(2,'0')}.png` : `assets/sprites/${folder}/${name}_${String(i).padStart(2,'0')}.png`;
-        SPRITES[key].push(img);
+        img.src=folder==='baratinha' ? `assets/sprites/baratinha/baratinha_esquerda_${String(name==='walk'?i:name==='hurt'?i+4:i+6).padStart(2,'0')}.png` : folder==='sapo_rei' ? `assets/sprites/sapo_rei/sapo_rei_${name}_${String(i).padStart(2,'0')}.png` : folder==='cobra_mola' ? `assets/sprites/cobra_mola/cobra_mola_${name}_${String(i).padStart(2,'0')}.png` : folder==='planta' ? `assets/sprites/planta/planta_${name}_${String(i).padStart(2,'0')}.png` : folder==='ratinho' ? `assets/sprites/ratinho/ratinho_${name}_${String(i).padStart(2,'0')}.png` : folder==='inimigos' && NEW_ENEMIES[name] ? `assets/sprites/novos/${name}/${name}_${String(i % NEW_ENEMIES[name]).padStart(2,'0')}.png` : folder==='inimigos' && CURATED[name] ? `assets/sprites/refinados/${name}/${name}_${String(i % CURATED[name]).padStart(2,'0')}.png` : `assets/sprites/${folder}/${name}_${String(i).padStart(2,'0')}.png`;
+        SPRITES[key].push(img);if(folder==='sapo_rei'){const right=new Image();right.src=`assets/sprites/sapo_rei/sapo_rei_${name}_${String(i).padStart(2,'0')}_direita.png`;SPRITES[key+'_direita'].push(right);}if(folder==='baratinha'){const right=new Image();right.src=`assets/sprites/baratinha/baratinha_direita_${String(name==='walk'?i:name==='hurt'?i+4:i+6).padStart(2,'0')}.png`;SPRITES[key+'_direita'].push(right);}if(folder==='planta'){const right=new Image();right.src=`assets/sprites/planta/planta_${name}_${String(i).padStart(2,'0')}_direita.png`;SPRITES[key+'_direita'].push(right);}
       }
     }
   }
 }
-function sprite(ctx,key,frame,x,y,w,h,flip=false){
+function sprite(ctx,key,frame,x,y,w,h,flip=false,smooth=false){
  const arr=SPRITES[key];if(!arr||!arr.length)return false;
  const img=arr[Math.floor(frame)%arr.length];if(!img.complete||!img.naturalWidth)return false;
- ctx.save();if(flip){ctx.translate(x+w,0);ctx.scale(-1,1);ctx.drawImage(img,0,y,w,h)}
+ ctx.save();ctx.imageSmoothingEnabled=!!smooth;if(smooth)ctx.imageSmoothingQuality='high';if(flip){ctx.translate(x+w,0);ctx.scale(-1,1);ctx.drawImage(img,0,y,w,h)}
  else ctx.drawImage(img,x,y,w,h);ctx.restore();return true;
 }
 loadSprites();
