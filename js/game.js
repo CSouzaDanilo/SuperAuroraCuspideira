@@ -453,6 +453,18 @@ for(const b of blocks){
 }
 
 function enemyDraw(e){
+ if(e.kind==='barata'||e.kind==='baratinha'){
+  // A barata antiga nao deve ser exibida: usar exclusivamente os PNGs da Baratinha.
+  const action=e.hit>0?'hurt':'walk';
+  const frame=action==='hurt'?Math.floor(tick/4)%2:Math.floor(tick/7)%4;
+  const key='baratinha_'+action+(e.dir>0?'_direita':'');
+  const drawn=sprite(g,key,frame,e.x-9,e.y-13,e.w+18,e.h+17,false,true);
+  if(!drawn){
+    // Enquanto a imagem carrega, nao substituir pelo antigo sprite de barata.
+    return;
+  }
+  return;
+ }
  if(e.kind==='ratinho'){
   const action=e.hit>0?'hurt':e.ratRunning?'run':'idle';
   const frame=action==='run'?Math.floor(tick/4)%8:action==='hurt'?Math.floor(tick/4)%2:Math.floor(tick/16)%4;

@@ -1,0 +1,1 @@
+V29.4.5 — Baratinha: 20 sprites PNG (duas direções; 4 caminhada, 2 dano, 4 derrota por direção). Sprites HD integrados ao carregamento e à renderização. Vida e colisões originais preservadas.
