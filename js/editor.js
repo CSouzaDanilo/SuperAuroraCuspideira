@@ -72,13 +72,13 @@ function create(tool,x,y){
  snapshot();let it=null;const X=snap(x),Y=snap(y);
  if(tool==='block'||tool==='metal'){data.blocks.push({x:X,y:Y,w:16,h:16,type:tool==='metal'?3:0,hp:tool==='metal'?20:1,alive:true});it={type:'blocks',key:'blocks',index:data.blocks.length-1}}
  if(tool==='coin'){data.coins.push({x:X,y:Y,got:false});it={type:'coins',key:'coins',index:data.coins.length-1}}
- if(tool==='enemy'){const kind=$('#enemyKind').value;data.enemies.push({x:X,y:Y,w:kind==='planta'?24:19,h:kind==='planta'?30:16,baseY:Y,kind,dir:-1,hp:kind==='planta'?2:kind==='besouro'?3:kind==='caranguejo'?2:1,phase:0,alive:true,hit:0});it={type:'enemies',key:'enemies',index:data.enemies.length-1}}
+ if(tool==='enemy'&&!['sapo_rei','cobra_mola'].includes($('#enemyKind').value)){const kind=$('#enemyKind').value;data.enemies.push({x:X,y:Y,w:kind==='planta'?24:19,h:kind==='planta'?30:16,baseY:Y,kind,dir:-1,hp:kind==='planta'?2:kind==='besouro'?3:kind==='caranguejo'?2:1,phase:0,alive:true,hit:0});it={type:'enemies',key:'enemies',index:data.enemies.length-1}}
  if(['platform','horizontal','vertical'].includes(tool)){data.platforms.push({x:X,y:Y,w:80,h:8,kind:tool==='platform'?'static':tool,range:96,speed:0.8,originX:X,originY:Y,dir:1});it={type:'platforms',key:'platforms',index:data.platforms.length-1}}
  if(tool==='spikes'){data.spikes.push({x:X,y:Y,w:48,h:12});it={type:'spikes',key:'spikes',index:data.spikes.length-1}}
  if(tool==='spring'){data.springs.push({x:X,y:Y,w:20,h:12,force:10.5});it={type:'springs',key:'springs',index:data.springs.length-1}}
  if(tool==='hole'){data.holes.push({x:X,w:64});it={type:'holes',key:'holes',index:data.holes.length-1}}
  if(tool==='pacifier'||tool==='shoe'||tool==='cube'){data.itemLists??={pacifier:[],shoe:[],cube:[]};data.itemLists[tool].push({x:X,y:Y,w:tool==='shoe'?24:22,h:tool==='shoe'?23:22});it={type:'items',key:tool,index:data.itemLists[tool].length-1}}
- if(tool==='boss'||tool==='cobra_mola'){const snake=tool==='cobra_mola';data.bosses??=[];data.bosses.push({x:X,y:Y,kind:snake?'cobra_mola':'sapo_rei',w:snake?110:55,h:snake?106:53,hp:8,maxHp:8,alive:true});it={type:'boss',key:'bosses',index:data.bosses.length-1}}
+ if(tool==='enemy'&&['sapo_rei','cobra_mola'].includes($('#enemyKind').value)){const snake=$('#enemyKind').value==='cobra_mola';data.bosses??=[];data.bosses.push({x:X,y:Y,kind:snake?'cobra_mola':'sapo_rei',w:snake?110:55,h:snake?106:53,hp:8,maxHp:8,alive:true});it={type:'boss',key:'bosses',index:data.bosses.length-1}}
  if(tool==='start'){data.start={x:X,y:Y};it={type:'start',key:'start',index:0}}
  if(tool==='finish'){data.finish=X;it={type:'finish',key:'finish',index:0}}
  selected=it?locate(it):null;renderAll();

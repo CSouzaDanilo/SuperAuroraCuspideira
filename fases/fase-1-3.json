@@ -297,7 +297,47 @@
       "dir": 1
     }
   ],
-  "enemies": [],
+  "enemies": [
+    {
+      "x": 640,
+      "y": 32,
+      "w": 24,
+      "h": 30,
+      "baseY": 32,
+      "kind": "planta",
+      "dir": -1,
+      "hp": 2,
+      "phase": 0,
+      "alive": true,
+      "hit": 0
+    },
+    {
+      "x": 464,
+      "y": 96,
+      "w": 19,
+      "h": 16,
+      "baseY": 96,
+      "kind": "barata",
+      "dir": -1,
+      "hp": 1,
+      "phase": 0,
+      "alive": true,
+      "hit": 0
+    },
+    {
+      "x": 816,
+      "y": 80,
+      "w": 19,
+      "h": 16,
+      "baseY": 80,
+      "kind": "barata",
+      "dir": -1,
+      "hp": 1,
+      "phase": 0,
+      "alive": true,
+      "hit": 0
+    }
+  ],
   "coins": [
     {
       "x": 128,

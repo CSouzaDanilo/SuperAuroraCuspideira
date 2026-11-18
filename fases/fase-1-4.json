@@ -10,7 +10,21 @@
   "finish": 3470,
   "blocks": [],
   "platforms": [],
-  "enemies": [],
+  "enemies": [
+    {
+      "x": 736,
+      "y": 144,
+      "w": 24,
+      "h": 30,
+      "baseY": 144,
+      "kind": "planta",
+      "dir": -1,
+      "hp": 2,
+      "phase": 0,
+      "alive": true,
+      "hit": 0
+    }
+  ],
   "coins": [
     {
       "x": 128,
@@ -68,9 +82,39 @@
       "got": false
     }
   ],
-  "holes": [],
+  "holes": [
+    {
+      "x": 576,
+      "w": 64
+    },
+    {
+      "x": 816,
+      "w": 64
+    }
+  ],
   "boss": null,
-  "bosses": [],
+  "bosses": [
+    {
+      "x": 1328,
+      "y": 48,
+      "kind": "cobra_mola",
+      "w": 110,
+      "h": 106,
+      "hp": 8,
+      "maxHp": 8,
+      "alive": true
+    },
+    {
+      "x": 368,
+      "y": 64,
+      "kind": "cobra_mola",
+      "w": 110,
+      "h": 106,
+      "hp": 8,
+      "maxHp": 8,
+      "alive": true
+    }
+  ],
   "spikes": [],
   "springs": [],
   "items": {
