@@ -240,3 +240,5 @@ O painel `configuracoes.html` agora permite regular os saltos do Sapo Rei e da C
 
 ## V29.4.1 — Correção visual da Cobra Mola
 A função drawBoss usa os PNGs de `assets/sprites/cobra_mola/` para idle, attack, hurt e defeat. O escudo, a vida, a física e as seis fases JSON não foram modificados.
+
+V29.4.4: Cobra Mola e Sapo Rei fixam direcao e velocidade horizontal durante o salto; recalculam ao pousar.

@@ -9,16 +9,17 @@ function loadSprites(){
     ratinho: {idle:4,run:8,hurt:2,defeat:4},
     planta: {idle:4,opening:3,open:3,hurt:2,defeat:2},
     cobra_mola: {idle:4,attack:4,hurt:2,defeat:4},
+    sapo_rei: {idle:4,attack:4,hurt:2,defeat:4},
     inimigos: {barata:7,caranguejo:6,sapo:8,caramujo:7,lesma:6,joaninha:7,besouro:7,espinho:2}
   };
   for(const [folder,types] of Object.entries(groups)){
     for(const [name,count] of Object.entries(types)){
-      const key=folder==='aurora'?'aurora_'+name:folder==='ratinho'?'ratinho_'+name:folder==='planta'?'planta_'+name:folder==='cobra_mola'?'cobra_mola_'+name:name;
-      SPRITES[key]=[];if(folder==='planta')SPRITES[key+'_direita']=[];
+      const key=folder==='aurora'?'aurora_'+name:folder==='ratinho'?'ratinho_'+name:folder==='planta'?'planta_'+name:folder==='cobra_mola'?'cobra_mola_'+name:folder==='sapo_rei'?'sapo_rei_'+name:name;
+      SPRITES[key]=[];if(folder==='planta'||folder==='sapo_rei')SPRITES[key+'_direita']=[];
       for(let i=0;i<count;i++){
         const img=new Image();
-        img.src=folder==='cobra_mola' ? `assets/sprites/cobra_mola/cobra_mola_${name}_${String(i).padStart(2,'0')}.png` : folder==='planta' ? `assets/sprites/planta/planta_${name}_${String(i).padStart(2,'0')}.png` : folder==='ratinho' ? `assets/sprites/ratinho/ratinho_${name}_${String(i).padStart(2,'0')}.png` : folder==='inimigos' && NEW_ENEMIES[name] ? `assets/sprites/novos/${name}/${name}_${String(i % NEW_ENEMIES[name]).padStart(2,'0')}.png` : folder==='inimigos' && CURATED[name] ? `assets/sprites/refinados/${name}/${name}_${String(i % CURATED[name]).padStart(2,'0')}.png` : `assets/sprites/${folder}/${name}_${String(i).padStart(2,'0')}.png`;
-        SPRITES[key].push(img);if(folder==='planta'){const right=new Image();right.src=`assets/sprites/planta/planta_${name}_${String(i).padStart(2,'0')}_direita.png`;SPRITES[key+'_direita'].push(right);}
+        img.src=folder==='sapo_rei' ? `assets/sprites/sapo_rei/sapo_rei_${name}_${String(i).padStart(2,'0')}.png` : folder==='cobra_mola' ? `assets/sprites/cobra_mola/cobra_mola_${name}_${String(i).padStart(2,'0')}.png` : folder==='planta' ? `assets/sprites/planta/planta_${name}_${String(i).padStart(2,'0')}.png` : folder==='ratinho' ? `assets/sprites/ratinho/ratinho_${name}_${String(i).padStart(2,'0')}.png` : folder==='inimigos' && NEW_ENEMIES[name] ? `assets/sprites/novos/${name}/${name}_${String(i % NEW_ENEMIES[name]).padStart(2,'0')}.png` : folder==='inimigos' && CURATED[name] ? `assets/sprites/refinados/${name}/${name}_${String(i % CURATED[name]).padStart(2,'0')}.png` : `assets/sprites/${folder}/${name}_${String(i).padStart(2,'0')}.png`;
+        SPRITES[key].push(img);if(folder==='sapo_rei'){const right=new Image();right.src=`assets/sprites/sapo_rei/sapo_rei_${name}_${String(i).padStart(2,'0')}_direita.png`;SPRITES[key+'_direita'].push(right);}if(folder==='planta'){const right=new Image();right.src=`assets/sprites/planta/planta_${name}_${String(i).padStart(2,'0')}_direita.png`;SPRITES[key+'_direita'].push(right);}
       }
     }
   }

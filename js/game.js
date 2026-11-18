@@ -4,7 +4,7 @@ const canvas=document.querySelector('#game'),g=canvas.getContext('2d'),W=384,H=2
 // Resolucao interna 2x para sprites HD. Coordenadas e fisica continuam 384x216.
 g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
 const CFG=window.AURORA_CONFIG||{};
-const keys={};let cobraDefeats=[];let mapWidth=3552,ground=188;let mode='intro',camera=0,score=0,money=0,health=CFG.player.initialHearts,tick=0,last=0,acc=0,sound=true,audio=null,finish=3470,superUnlocked=false,chargeTicks=0,chargeReady=false,chargeHeld=false,chargeMax=CFG.superSpit.chargeMaxFrames,chargeThreshold=CFG.superSpit.chargeFrames,spitKeyWasDown=false,stageReadyAt=0,level=1,levelRewarded=false,pacifier=null,shoe=null,cube=null,magicInvincible=false,doubleJumpUnlocked=false,boss=null,bosses=[],itemLists={pacifier:[],shoe:[],cube:[]};
+const keys={};let cobraDefeats=[],sapoDefeats=[];let mapWidth=3552,ground=188;let mode='intro',camera=0,score=0,money=0,health=CFG.player.initialHearts,tick=0,last=0,acc=0,sound=true,audio=null,finish=3470,superUnlocked=false,chargeTicks=0,chargeReady=false,chargeHeld=false,chargeMax=CFG.superSpit.chargeMaxFrames,chargeThreshold=CFG.superSpit.chargeFrames,spitKeyWasDown=false,stageReadyAt=0,level=1,levelRewarded=false,pacifier=null,shoe=null,cube=null,magicInvincible=false,doubleJumpUnlocked=false,boss=null,bosses=[],itemLists={pacifier:[],shoe:[],cube:[]};
 const player={x:32,y:140,w:17,h:29,vx:0,vy:0,grounded:false,face:1,step:0,cool:0,spitAnim:0,inv:0,coyote:0,jumps:0};
 let blocks=[],ledges=[],enemies=[],coins=[],shots=[],dust=[],holes=[],market=[],spikes=[],springs=[],ratDefeats=[];
 function defeatRat(e){if(e.kind==='ratinho')ratDefeats.push({x:e.x,y:e.y,w:e.w,h:e.h,age:0});if(e.kind==='planta')plantDefeats.push({x:e.x,y:e.y,w:e.w,h:e.h,age:0,faceRight:player.x+player.w/2>e.x+e.w/2});}
@@ -43,7 +43,7 @@ function build(preserve=false){
  mapWidth=data.width;ground=data.ground;finish=data.finish;
  itemLists={pacifier:!superUnlocked?[...(data.itemLists?.pacifier||[])]:[],shoe:!doubleJumpUnlocked?[...(data.itemLists?.shoe||[])]:[],cube:[...(data.itemLists?.cube||[])]};
  pacifier=itemLists.pacifier[0]||null;shoe=itemLists.shoe[0]||null;cube=itemLists.cube[0]||null;magicInvincible=false;
- cobraDefeats=[];bosses=(data.bosses|| (data.boss?[data.boss]:[])).map(b=>{const bc=CFG['boss_'+(b.kind==='cobra_mola'?'cobra_mola':'sapo_rei')];return {...b,hp:bc.health,maxHp:bc.health,dir:-1,hit:0,alive:true,phase:0,vy:0,grounded:false,jumpWait:35};});boss=bosses[0]||null;
+ cobraDefeats=[];sapoDefeats=[];bosses=(data.bosses|| (data.boss?[data.boss]:[])).map(b=>{const bc=CFG['boss_'+(b.kind==='cobra_mola'?'cobra_mola':'sapo_rei')];return {...b,hp:bc.health,maxHp:bc.health,dir:-1,hit:0,alive:true,phase:0,vy:0,grounded:false,jumpWait:35};});boss=bosses[0]||null;
  if(!preserve){health=CFG.player.initialHearts;score=0;}
  levelRewarded=false;chargeTicks=0;chargeReady=false;chargeHeld=false;spitKeyWasDown=false;keys.KeyC=false;
  player.x=data.start.x;player.y=data.start.y;player.vx=0;player.vy=0;player.face=1;player.inv=0;
@@ -312,13 +312,23 @@ if(rect(player,e)){if(magicInvincible){defeatOnContact(e);continue;}if(player.vy
 if(e.hp<=0){defeatRat(e);e.alive=false;spark(e.x+9,e.y+8,'#ff8aa2',10)}}
 // Super Sapo Rei: salta em direcao a Aurora.
 for(const b of bosses)if(b.alive){ const bc=CFG['boss_'+(b.kind==='cobra_mola'?'cobra_mola':'sapo_rei')];b.phase+=.075;if(b.hit>0)b.hit--;
- const distance=player.x+player.w/2-(b.x+b.w/2);b.dir=distance<0?-1:1;
+ const distance=player.x+player.w/2-(b.x+b.w/2);
+ // Ambos os chefes fixam direção e velocidade horizontal na decolagem.
+ // Aurora pode passar por baixo sem o chefe inverter a queda.
+ if(b.grounded)b.dir=distance<0?-1:1;
  if(b.grounded){
    b.vy=0;
-   if(Math.abs(distance)<370&&--b.jumpWait<=0){b.vy=-bc.jumpForce;b.grounded=false;b.jumpWait=bc.jumpInterval;spark(b.x+b.w/2,b.y+b.h,'#a1f68a',9)}
+   if(Math.abs(distance)<370&&--b.jumpWait<=0){
+     b.jumpDir=b.dir;
+     b.jumpVx=Math.abs(distance)>18?b.dir*(b.kind==='cobra_mola'?2.15:1.65)*bc.moveSpeed:0;
+     b.vy=-bc.jumpForce;b.grounded=false;b.jumpWait=bc.jumpInterval;
+     spark(b.x+b.w/2,b.y+b.h,'#a1f68a',9);
+   }
  }
  if(!b.grounded){
-   const oldY=b.y;let nx=Math.max(0,Math.min(mapWidth-b.w,b.x+b.dir*(Math.abs(distance)>18?(b.kind==='cobra_mola'?2.15:1.65)*bc.moveSpeed:0)));
+   const oldY=b.y;
+   const dx=b.jumpVx??0;
+   let nx=Math.max(0,Math.min(mapWidth-b.w,b.x+dx));
    if(!blocks.some(k=>k.alive&&rect({x:nx,y:b.y,w:b.w,h:b.h},k)))b.x=nx;
    b.vy=Math.min(8,b.vy+bc.gravity);b.y+=b.vy;
    if(b.vy>=0){
@@ -328,10 +338,10 @@ for(const b of bosses)if(b.alive){ const bc=CFG['boss_'+(b.kind==='cobra_mola'?'
    if(b.y>H+50){b.x=Math.max(0,Math.min(mapWidth-b.w,finish-130));b.y=ground-b.h;b.vy=0;b.grounded=true;b.jumpWait=35}
  }
  if(rect(player,b)){
-  if(magicInvincible){b.alive=false;b.hp=0;if(b.kind==='cobra_mola')cobraDefeats.push({x:b.x,y:b.y,w:b.w,h:b.h,dir:b.dir,age:0});score+=CFG.rewards.bossPoints;spark(b.x+24,b.y+20,'#dca5ff',45);}
+  if(magicInvincible){b.alive=false;b.hp=0;recordBossDefeat(b);score+=CFG.rewards.bossPoints;spark(b.x+24,b.y+20,'#dca5ff',45);}
   else if(player.vy>0.8&&oldY+player.h<=b.y+Math.min(15,b.h*.28)){
    // Pisão válido apenas se o perfil do chefão permitir dano por cabeçada/pisão.
-   if(bc.stompDamage>0){b.hp=Math.max(0,b.hp-bc.stompDamage);b.hit=13;spark(b.x+b.w/2,b.y,'#ffdf8d',14);sfx(570,.1,'triangle');if(!b.hp){b.alive=false;if(b.kind==='cobra_mola')cobraDefeats.push({x:b.x,y:b.y,w:b.w,h:b.h,dir:b.dir,age:0});score+=CFG.rewards.bossPoints;}}
+   if(bc.stompDamage>0){b.hp=Math.max(0,b.hp-bc.stompDamage);b.hit=13;spark(b.x+b.w/2,b.y,'#ffdf8d',14);sfx(570,.1,'triangle');if(!b.hp){b.alive=false;recordBossDefeat(b);score+=CFG.rewards.bossPoints;}}
    else damage();
    player.y=b.y-player.h;player.vy=-5.2;player.grounded=false;
   }else damage();
@@ -343,7 +353,7 @@ for(const b of blocks){if(!b.alive||!rect(p,b))continue;if(b.type===3){hit=true;
 if(!hit)for(const b of bosses){if(!b.alive||!rect(p,b))continue;
    hit=true;const bc=CFG['boss_'+(b.kind==='cobra_mola'?'cobra_mola':'sapo_rei')];const dmg=p.power?bc.superSpitDamage:bc.normalSpitDamage;if(dmg>0){b.hp=Math.max(0,b.hp-dmg);b.hit=13;}
    spark(p.x,p.y,'#8deaff',15);
-   if(b.hp===0){b.alive=false;if(b.kind==='cobra_mola')cobraDefeats.push({x:b.x,y:b.y,w:b.w,h:b.h,dir:b.dir,age:0});score+=CFG.rewards.bossPoints;spark(b.x+b.w/2,b.y+b.h/2,'#8af5a3',45);sfx(520,.28,'triangle',.04);}break;
+   if(b.hp===0){b.alive=false;recordBossDefeat(b);score+=CFG.rewards.bossPoints;spark(b.x+b.w/2,b.y+b.h/2,'#8af5a3',45);sfx(520,.28,'triangle',.04);}break;
  }
  if(!hit)for(const e of enemies){if(e.alive&&rect(p,e)){const ec=CFG['enemy_'+e.kind];e.hp-=Math.round((p.power?CFG.superSpit.enemyDamage:CFG.normalSpit.enemyDamage)*(ec?ec.spitDamageMultiplier:1));e.hit=8;spark(p.x,p.y,'#b9faff');if(e.hp<=0){defeatRat(e);e.alive=false;score+=CFG.rewards.enemyPoints;spark(e.x+8,e.y+8,'#ffb76b',12);}p.enemiesLeft--;hit=p.enemiesLeft<=0;break}}
 if(hit||p.life<=0||p.x<0||p.x>mapWidth)shots.splice(i,1)}
@@ -483,7 +493,17 @@ if(k==='lesma'){r(x+1,y+11,17,5,'#eab184');r(x+4,y+7,12,6,'#cf3ca7');r(x+12,y+3,
 if(k==='besouro'){r(x+2,y+5,15,10,'#1b4d9a');r(x+4,y+3,11,8,'#357ed0');r(x+3,y+12,3,4,'#e4b052');r(x+13,y+12,3,4,'#e4b052');r(x+9,y+7,9,6,'#f3d25d');r(x+10,y+8,7,4,'#20273e');r(x+11,y+9,2,2,'#e2faff');r(x+15,y+9,2,2,'#e2faff')}
 if(k==='caranguejo'){r(x+3,y+7,13,7,'#e8494e');r(x+5,y+4,10,7,'#ff7860');r(x,y+3,5,6,'#dc3948');r(x+15,y+3,5,6,'#dc3948');r(x+6,y+1,4,5,'#fff');r(x+12,y+1,4,5,'#fff');r(x+8,y+3,2,2,'#2c2643');r(x+14,y+3,2,2,'#2c2643');r(x+4,y+14,3,2,'#ba3845');r(x+12,y+14,3,2,'#ba3845')}
 }
+function recordBossDefeat(b){
+ const target=b.kind==='cobra_mola'?cobraDefeats:sapoDefeats;
+ target.push({x:b.x,y:b.y,w:b.w,h:b.h,dir:b.dir,age:0});
+}
 function drawBoss(){
+ for(let i=sapoDefeats.length-1;i>=0;i--){
+  const d=sapoDefeats[i];d.age++;
+  const frame=Math.min(3,Math.floor(d.age/8));
+  sprite(g,'sapo_rei_defeat'+(d.dir>0?'_direita':''),frame,Math.round(d.x)-6,Math.round(d.y)-22,d.w+12,d.h+27,false,true);
+  if(d.age>36)sapoDefeats.splice(i,1);
+ }
  for(let i=cobraDefeats.length-1;i>=0;i--){
   const d=cobraDefeats[i];d.age++;
   const frame=Math.min(3,Math.floor(d.age/8));
@@ -501,18 +521,13 @@ function drawBoss(){
   r(x+1,y-34,b.w-2,8,'#12192d');r(x+3,y-32,Math.round((b.w-6)*b.hp/b.maxHp),4,'#8ce64f');
   text('COBRA MOLA',x+8,y-47,'#fff2a5',8);continue;
  }
- // Sprite do sapo inimigo ampliado, com coroa de rei.
- if(!sprite(g,'sapo',Math.floor(b.phase*1.5)%3,x-6,y-9,b.w+12,b.h+13,b.dir<0)){
-   r(x+5,y+16,b.w-10,b.h-19,'#226c3d');r(x+9,y+12,b.w-18,b.h-18,'#65d65c');
-   r(x+10,y+8,12,13,'#fff');r(x+b.w-22,y+8,12,13,'#fff');
-   r(x+16,y+13,4,5,'#24313c');r(x+b.w-18,y+13,4,5,'#24313c');
- }
- const cx=x+Math.floor(b.w/2);
- r(cx-15,y-10,30,10,'#51351d');r(cx-13,y-9,26,7,'#f6c83d');
- r(cx-14,y-17,7,9,'#f6c83d');r(cx-3,y-22,7,14,'#ffdf55');r(cx+8,y-17,7,9,'#f6c83d');
- r(cx-10,y-7,5,4,'#e04a50');r(cx+5,y-7,5,4,'#e04a50');r(cx-2,y-7,4,4,'#fff3a6');
+ // Sprites HD exclusivos do Sapo Rei, sem sobrepor coroa geométrica.
+ const action=b.hit>0?'hurt':!b.grounded?'attack':'idle';
+ const frame=action==='hurt'?Math.floor(tick/5)%2:Math.floor(b.phase*(action==='attack'?5:2))%4;
+ const rendered=sprite(g,'sapo_rei_'+action+(b.dir>0?'_direita':''),frame,x-6,y-22,b.w+12,b.h+27,false,true);
+ if(!rendered){r(x+5,y+12,b.w-10,b.h-13,'#75d946');r(x+8,y+8,b.w-16,13,'#f9d94b');}
  if(!b.grounded)r(x+8,ground+1,b.w-16,3,'#46372d');
- r(x+1,y-34,b.w-2,8,'#12192d');r(x+3,y-32,b.w-6,4,'#543a46');
+ r(x+1,y-34,b.w-2,8,'#12192d');
  r(x+3,y-32,Math.round((b.w-6)*b.hp/b.maxHp),4,'#8ce64f');
  text('SUPER SAPO REI',x-15,y-47,'#fff2a5',8);
 }

@@ -1,0 +1,1 @@
+V29.4.2 — Sapo Rei: 28 sprites HD (14 por direção), coroa e olhos amarelos com pupilas horizontais. Animações idle/attack/hurt/defeat integradas. Mantidas regras de 8 HP, cuspe normal 1, super cuspe 2 e pisão sem dano ao Sapo Rei. Fases, editor, configurações e Cobra Mola preservados.
