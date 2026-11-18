@@ -1,10 +1,15 @@
 
 (()=>{'use strict';
-const canvas=document.querySelector('#game'),g=canvas.getContext('2d'),W=384,H=216,T=16,$=s=>document.querySelector(s);g.imageSmoothingEnabled=false;
+const canvas=document.querySelector('#game'),g=canvas.getContext('2d'),W=384,H=216,T=16,$=s=>document.querySelector(s);
+// Resolucao interna 2x para sprites HD. Coordenadas e fisica continuam 384x216.
+g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
 const CFG=window.AURORA_CONFIG||{};
 const keys={};let mapWidth=3552,ground=188;let mode='intro',camera=0,score=0,money=0,health=CFG.player.initialHearts,tick=0,last=0,acc=0,sound=true,audio=null,finish=3470,superUnlocked=false,chargeTicks=0,chargeReady=false,chargeHeld=false,chargeMax=CFG.superSpit.chargeMaxFrames,chargeThreshold=CFG.superSpit.chargeFrames,spitKeyWasDown=false,stageReadyAt=0,level=1,levelRewarded=false,pacifier=null,shoe=null,cube=null,magicInvincible=false,doubleJumpUnlocked=false,boss=null,bosses=[],itemLists={pacifier:[],shoe:[],cube:[]};
 const player={x:32,y:140,w:17,h:29,vx:0,vy:0,grounded:false,face:1,step:0,cool:0,spitAnim:0,inv:0,coyote:0,jumps:0};
-let blocks=[],ledges=[],enemies=[],coins=[],shots=[],dust=[],holes=[],market=[],spikes=[],springs=[];
+let blocks=[],ledges=[],enemies=[],coins=[],shots=[],dust=[],holes=[],market=[],spikes=[],springs=[],ratDefeats=[];
+function defeatRat(e){if(e.kind==='ratinho')ratDefeats.push({x:e.x,y:e.y,w:e.w,h:e.h,age:0});if(e.kind==='planta')plantDefeats.push({x:e.x,y:e.y,w:e.w,h:e.h,age:0,faceRight:player.x+player.w/2>e.x+e.w/2});}
+const plantDefeats=[];
+
 const itemImages={pacifier:new Image(),shoe:new Image()};
 itemImages.pacifier.src='assets/sprites/itens/super_chupeta.png';
 itemImages.shoe.src='assets/sprites/itens/sapatinho_rosa.png';
@@ -34,7 +39,7 @@ function build(preserve=false){
  if(!preserve){level=1;superUnlocked=false;doubleJumpUnlocked=false;}
  const data=window.AURORA_LEVELS.load(level,{draftFirst:!!new URLSearchParams(location.search).get('testLevel')});
  blocks=data.blocks;ledges=data.platforms;enemies=data.enemies;for(const e of enemies){const ec=CFG['enemy_'+e.kind];if(ec){e.hp=ec.health;e.maxHp=ec.health;}}coins=data.coins;
- holes=data.holes;spikes=data.spikes||[];springs=data.springs||[];market=[];shots=[];dust=[];
+ holes=data.holes;spikes=data.spikes||[];springs=data.springs||[];market=[];shots=[];dust=[];ratDefeats=[];plantDefeats.length=0;
  mapWidth=data.width;ground=data.ground;finish=data.finish;
  itemLists={pacifier:!superUnlocked?[...(data.itemLists?.pacifier||[])]:[],shoe:!doubleJumpUnlocked?[...(data.itemLists?.shoe||[])]:[],cube:[...(data.itemLists?.cube||[])]};
  pacifier=itemLists.pacifier[0]||null;shoe=itemLists.shoe[0]||null;cube=itemLists.cube[0]||null;magicInvincible=false;
@@ -283,14 +288,28 @@ const flying=e.kind==='joaninha';
   e.baseY=e.y=Math.min(target,e.y+Math.min(7,(e.fallSpeed=(e.fallSpeed||0)+(ec?ec.gravity:CFG.enemies.fallGravity))));
   if(e.y>=target)e.fallSpeed=0;
  }
+ // Planta: dorme longe, desperta ao aproximar, e volta a dormir ao se afastar.
+ if(e.kind==='planta'){
+   const dist=Math.abs((player.x+player.w/2)-(e.x+e.w/2));
+   const wake=Number(ec?.wakeDistance)||145, sleep=Math.max(wake+15,Number(ec?.sleepDistance)||190);
+   if(e.plantAwake===undefined){e.plantAwake=false;e.plantAnim=0;}
+   if(!e.plantAwake&&dist<=wake){e.plantAwake=true;e.plantAnim=0;}
+   else if(e.plantAwake&&dist>=sleep){e.plantAwake=false;e.plantAnim=0;}
+   else e.plantAnim=(e.plantAnim||0)+1;
+ }
  const nextY=flying?e.baseY+Math.sin(e.phase)*14:e.kind==='sapo'?e.baseY-Math.max(0,Math.sin(e.phase))*20:e.baseY;
 // Primeiro testa a parede; só depois atualiza a posição do inimigo.
-if(e.kind!=='planta')moveEnemy(e,speed*CFG.enemies.speedMultiplier,nextY);
+if(e.kind==='ratinho'){
+  const dx=player.x+player.w/2-(e.x+e.w/2);
+  // Fica tranquilo até Aurora se aproximar; foge na direção oposta.
+  e.ratRunning=Math.abs(dx)<135;
+  if(e.ratRunning){e.dir=dx<0?1:-1;moveEnemy(e,speed*CFG.enemies.speedMultiplier,nextY);}
+ }else if(e.kind!=='planta')moveEnemy(e,speed*CFG.enemies.speedMultiplier,nextY);
 // Inimigos voadores ou saltadores também não podem atravessar um bloco na vertical.
 if(e.kind==='planta'||(!enemyBlocked(e,e.x,nextY)&&!enemyAhead(e,e.x,nextY)))e.y=nextY;
 if(e.x<30){e.x=30;e.dir=1}else if(e.x>mapWidth-50){e.x=mapWidth-50;e.dir=-1;}
 if(rect(player,e)){if(magicInvincible){defeatOnContact(e);continue;}if(player.vy>1&&oldY+player.h<=e.y+7){const hit=ec?ec.stompDamage:1;if(hit>0){e.hp=Math.max(0,e.hp-hit);e.hit=8;score+=100;player.vy=-4.6;}else {player.vy=-4.6;damage();}}else damage()}
-if(e.hp<=0){e.alive=false;spark(e.x+9,e.y+8,'#ff8aa2',10)}}
+if(e.hp<=0){defeatRat(e);e.alive=false;spark(e.x+9,e.y+8,'#ff8aa2',10)}}
 // Super Sapo Rei: salta em direcao a Aurora.
 for(const b of bosses)if(b.alive){ const bc=CFG['boss_'+(b.kind==='cobra_mola'?'cobra_mola':'sapo_rei')];b.phase+=.075;if(b.hit>0)b.hit--;
  const distance=player.x+player.w/2-(b.x+b.w/2);b.dir=distance<0?-1:1;
@@ -326,7 +345,7 @@ if(!hit)for(const b of bosses){if(!b.alive||!rect(p,b))continue;
    spark(p.x,p.y,'#8deaff',15);
    if(b.hp===0){b.alive=false;score+=CFG.rewards.bossPoints;spark(b.x+b.w/2,b.y+b.h/2,'#8af5a3',45);sfx(520,.28,'triangle',.04);}break;
  }
- if(!hit)for(const e of enemies){if(e.alive&&rect(p,e)){const ec=CFG['enemy_'+e.kind];e.hp-=Math.round((p.power?CFG.superSpit.enemyDamage:CFG.normalSpit.enemyDamage)*(ec?ec.spitDamageMultiplier:1));e.hit=8;spark(p.x,p.y,'#b9faff');if(e.hp<=0){e.alive=false;score+=CFG.rewards.enemyPoints;spark(e.x+8,e.y+8,'#ffb76b',12);}p.enemiesLeft--;hit=p.enemiesLeft<=0;break}}
+ if(!hit)for(const e of enemies){if(e.alive&&rect(p,e)){const ec=CFG['enemy_'+e.kind];e.hp-=Math.round((p.power?CFG.superSpit.enemyDamage:CFG.normalSpit.enemyDamage)*(ec?ec.spitDamageMultiplier:1));e.hit=8;spark(p.x,p.y,'#b9faff');if(e.hp<=0){defeatRat(e);e.alive=false;score+=CFG.rewards.enemyPoints;spark(e.x+8,e.y+8,'#ffb76b',12);}p.enemiesLeft--;hit=p.enemiesLeft<=0;break}}
 if(hit||p.life<=0||p.x<0||p.x>mapWidth)shots.splice(i,1)}
 for(let i=dust.length-1;i>=0;i--){let d=dust[i];d.x+=d.vx;d.y+=d.vy;d.vy+=.14;if(--d.life<=0)dust.splice(i,1)}
 camera=Math.max(0,Math.min(mapWidth-W,player.x-CFG.camera.followOffset));if(player.x>finish&&bosses.every(b=>!b.alive)){score+=CFG.rewards.stagePoints;if(level<window.AURORA_LEVELS.MAX_LEVEL)nextLevel();else finalVictory()}updateHud();}
@@ -425,14 +444,27 @@ for(const b of blocks){
 
 function enemyDraw(e){
  if(e.kind==='ratinho'){
-  const x=Math.round(e.x),y=Math.round(e.y),leg=tick%12<6?1:0;
-  r(x+2,y+6,16,9,'#7e8797');r(x+4,y+2,11,9,'#a7afba');
-  r(x+2,y,5,5,'#9da6b4');r(x+12,y,5,5,'#9da6b4');
-  r(x+6,y+5,11,4,'#151b2d');r(x+7,y+6,3,2,'#5b708b');r(x+13,y+6,3,2,'#5b708b');
-  r(x+17,y+9,3,3,'#eaa4a7');r(x+3,y+14,4,2,'#555c70');r(x+12+leg,y+14,4,2,'#555c70');
-  r(x-4,y+9,6,2,'#b5bdc7');return;
+  const action=e.hit>0?'hurt':e.ratRunning?'run':'idle';
+  const frame=action==='run'?Math.floor(tick/4)%8:action==='hurt'?Math.floor(tick/4)%2:Math.floor(tick/16)%4;
+  if(sprite(g,'ratinho_'+action,frame,e.x-8,e.y-11,e.w+16,e.h+14,e.dir<0))return;
  }
  if(e.kind==='planta'){
+  // O vaso usa o mesmo ponto de apoio em todas as poses e direções.
+  // Dorme fora do raio de detecção; desperta e alterna abertura/fechamento perto de Aurora.
+  const age=e.plantAnim||0;
+  let action,frame;
+  if(e.hit>0){action='hurt';frame=Math.floor(tick/4)%2;}
+  else if(!e.plantAwake){action='idle';frame=Math.floor(tick/20)%4;}
+  else if(age<18){action='opening';frame=Math.min(2,Math.floor(age/6));}
+  else {
+   const cycle=(age-18)%64;
+   if(cycle<12){action='opening';frame=Math.min(2,Math.floor(cycle/4));}
+   else if(cycle<34){action='open';frame=Math.floor((cycle-12)/8)%3;}
+   else if(cycle<46){action='opening';frame=Math.max(0,2-Math.floor((cycle-34)/4));}
+   else {action='idle';frame=Math.floor((cycle-46)/6)%4;}
+  }
+  const plantFacesRight=player.x+player.w/2>e.x+e.w/2;
+  if(sprite(g,'planta_'+action+(plantFacesRight?'_direita':''),frame,e.x-9,e.y-10,e.w+18,e.h+12,false,true))return;
   const x=Math.round(e.x),y=Math.round(e.y),open=Math.sin(e.phase*1.4)>0;
   r(x+2,y+19,20,11,'#256b45');r(x,y+18,24,4,'#64c26c');
   r(x+5,y+23,14,5,'#389957');r(x+11,y+11,3,9,'#28874a');
@@ -514,7 +546,20 @@ for(const shoe of itemLists.shoe){
  if(itemImages.shoe.complete&&itemImages.shoe.naturalWidth)g.drawImage(itemImages.shoe,shoe.x,y,shoe.w,shoe.h);
  if(tick%16<8){r(shoe.x-3,y+2,3,3,'#fff6a6');r(shoe.x+shoe.w+1,y+5,3,3,'#fff6a6')}
 }
-for(const e of enemies)if(e.alive)enemyDraw(e);drawBoss();for(const p of shots){
+for(const e of enemies)if(e.alive)enemyDraw(e);
+ for(let i=ratDefeats.length-1;i>=0;i--){
+  const d=ratDefeats[i];d.age++;
+  const frame=Math.min(3,Math.floor(d.age/9));
+  sprite(g,'ratinho_defeat',frame,d.x-8,d.y-11,d.w+16,d.h+14,false);
+  if(d.age>=42)ratDefeats.splice(i,1);
+ }
+ for(let i=plantDefeats.length-1;i>=0;i--){
+  const d=plantDefeats[i];d.age++;
+  const frame=Math.min(1,Math.floor(d.age/15));
+  sprite(g,'planta_defeat'+(d.faceRight?'_direita':''),frame,d.x-9,d.y-10,d.w+18,d.h+12,false,true);
+  if(d.age>=36)plantDefeats.splice(i,1);
+ }
+ drawBoss();for(const p of shots){
  // Gota animada em três quadros, com reflexo e pequenas partículas.
  const pulse=Math.floor(p.age/3)%3;
  if(p.power){const cx=p.x+7,cy=p.y+7;r(cx-8,cy-4,17,9,'#124c92');r(cx-4,cy-8,9,17,'#124c92');r(cx-6,cy-6,13,13,'#288fd4');r(cx-4,cy-5,9,10,'#60d5ff');r(cx-3,cy-5,5,3,'#e2ffff');r(p.x-p.dir*5,p.y+6,4,3,'#55b9f5');continue;}r(p.x-p.dir*3,p.y+2,3,2,'#4ab8ee');

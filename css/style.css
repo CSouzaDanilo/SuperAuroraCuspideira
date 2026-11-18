@@ -36,3 +36,29 @@
 /* V29.0: controles virtuais sempre disponíveis em dispositivos touch, inclusive paisagem. */
 @media (pointer:coarse){.controls{display:flex!important}.controls button{touch-action:none;-webkit-user-select:none;user-select:none;min-width:48px;min-height:48px}.controls button:active{filter:brightness(.75);transform:translateY(2px)}body{overscroll-behavior:none}}
 @media (pointer:coarse) and (orientation:landscape) and (max-height:520px){body{padding:3px}.wrap h1{font-size:16px;margin:0}.frame{max-width:min(100%,calc((100dvh - 105px)*16/9));margin:auto}.controls{margin-top:3px}.controls button{min-height:38px;padding:5px 10px}.hint{display:none}.status{font-size:10px;margin-top:4px}}
+
+/* V29.3.4: interface imersiva. Somente a tela do jogo fica visível. */
+html,body{width:100%;height:100%;min-height:100%;overflow:hidden}
+body{display:flex;align-items:center;justify-content:center;padding:0;margin:0;background:#080b19}
+.wrap{width:min(100vw,calc(100dvh * 16 / 9));max-width:none;margin:auto}
+.frame{border:0;box-shadow:none;width:100%;margin:0;aspect-ratio:16/9}
+.frame canvas{width:100%;height:100%;object-fit:contain}
+.frame>.status{display:none!important}
+.frame>.controls{display:none}
+/* Controles virtuais flutuantes, sem aumentar a altura da página. */
+@media(pointer:coarse){
+  .wrap{width:min(100vw,calc(100dvh * 16 / 9))}
+  .frame{max-width:none!important;width:100%;margin:0}
+  .frame>.controls{display:flex!important;position:absolute;bottom:2%;left:1.2%;right:1.2%;margin:0;z-index:20;pointer-events:none;justify-content:space-between;gap:5px}
+  .frame>.controls>div{display:flex;gap:clamp(3px,1vw,9px);pointer-events:none}
+  .frame>.controls button{pointer-events:auto;min-width:clamp(34px,6.8vw,64px);min-height:clamp(34px,6.8vw,58px);padding:5px;margin:0;font-size:clamp(12px,2.6vw,20px);opacity:.77;border:2px solid #14385c;border-radius:9px;background:#8be8ff;color:#1a234b;touch-action:none;-webkit-user-select:none;user-select:none}
+  .frame>.controls button:active{opacity:1;transform:scale(.96)}
+}
+@media(pointer:coarse) and (orientation:portrait){
+  .wrap{width:100vw}
+  .frame>.controls{bottom:2%}
+  .frame>.controls button{min-width:clamp(28px,9vw,44px);min-height:clamp(28px,9vw,44px);font-size:12px}
+}
+
+/* V29.3.9: canvas HiDPI, com interpolacao somente nos sprites HD selecionados. */
+#game{image-rendering:auto;}

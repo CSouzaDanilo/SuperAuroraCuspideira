@@ -1,0 +1,12 @@
+SUPER AURORA CUSPIDEIRA V29.2 — CONFIGURAÇÕES INDIVIDUAIS
+
+Abra configuracoes.html e ajuste cada espécie de inimigo e cada chefão na sua seção.
+As configurações ficam no navegador; exporte aurora-config.json para guardar os ajustes.
+
+Super Sapo Rei: stompDamage=0 (não recebe dano de pisões); normalSpitDamage=1; superSpitDamage=2.
+Cobra Mola: stompDamage=1 (precisa de 8 pisões com vida padrão 8); normalSpitDamage=0; superSpitDamage=0 (imune a cuspes).
+
+Para adicionar uma espécie no futuro, registre os parâmetros em js/config.js (defaults e ranges), adicione a seção em configuracoes.html e use o perfil no game.js.
+
+Os seis JSONs em fases/, o editor e as demais configurações foram preservados.
+Execute com servidor local: python3 -m http.server 8000

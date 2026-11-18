@@ -1,0 +1,1 @@
+V29.3.2 — Ratinho 16-bit redesenhado. 18 quadros em PNG RGBA 320x190, com alinhamento pela base. Mantidas dimensões de renderização e colisão no jogo, mapas JSON e demais recursos.

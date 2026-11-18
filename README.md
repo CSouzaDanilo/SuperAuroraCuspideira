@@ -221,3 +221,9 @@ no eixo Y, câmera vertical e ferramentas de navegação no editor.
 ## V29.1 — Ajustes de level design
 
 O painel `configuracoes.html` agora permite regular os saltos do Sapo Rei e da Cobra Mola, gravidade e velocidade dos inimigos, câmera horizontal e velocidade dos créditos. O salto padrão do Super Sapo Rei foi reduzido de 7,6 para 4,5. A câmera vertical ainda não está implementada. Os mapas das seis fases em `fases/` permanecem intactos.
+
+
+### V29.3.6 — Planta Carnívora
+- Sprites com vaso marrom terracota e fundo transparente (14 quadros 512×384).
+- Planta olha para Aurora, espelhando horizontalmente os quadros quando necessário.
+- Colisão, vida, seis mapas JSON e editor preservados.

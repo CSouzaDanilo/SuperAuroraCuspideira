@@ -249,38 +249,38 @@
       "dir": 1
     },
     {
-      "x": 1424,
+      "x": 1392,
       "y": 112,
       "w": 80,
       "h": 8,
       "kind": "horizontal",
       "range": 96,
       "speed": 0.8,
-      "originX": 1424,
+      "originX": 1392,
       "originY": 112,
       "dir": 1
     },
     {
-      "x": 1712,
+      "x": 1648,
       "y": 112,
       "w": 80,
       "h": 8,
       "kind": "horizontal",
       "range": 96,
       "speed": 0.8,
-      "originX": 1712,
+      "originX": 1648,
       "originY": 112,
       "dir": 1
     },
     {
-      "x": 1936,
+      "x": 1872,
       "y": 112,
       "w": 80,
       "h": 8,
       "kind": "horizontal",
       "range": 96,
       "speed": 0.8,
-      "originX": 1936,
+      "originX": 1872,
       "originY": 112,
       "dir": 1
     },
@@ -414,7 +414,7 @@
     "shoe": null,
     "cube": {
       "x": 192,
-      "y": 160,
+      "y": 96,
       "w": 22,
       "h": 22
     }
@@ -425,7 +425,7 @@
     "cube": [
       {
         "x": 192,
-        "y": 160,
+        "y": 96,
         "w": 22,
         "h": 22
       }

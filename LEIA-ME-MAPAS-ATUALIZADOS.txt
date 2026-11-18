@@ -1,0 +1,6 @@
+SUPER AURORA CUSPIDEIRA V29.2 - MAPAS DO USUARIO
+
+Os seis arquivos fases/fase-1-1.json ate fases/fase-1-6.json foram substituidos pelos mapas recebidos em fases.zip em 17/11/2026.
+O restante do codigo da V29.2 foi preservado.
+Para jogar com os mapas publicados, execute via servidor HTTP, por exemplo: python3 -m http.server 8000
+No editor, rascunhos locais antigos podem prevalecer no modo de teste.
