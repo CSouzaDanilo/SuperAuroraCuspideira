@@ -23,7 +23,7 @@ const defaults={
  enemy_ratinho:{speed:0.85,health:1,gravity:0.36,stompDamage:1,spitDamageMultiplier:1},
  enemy_planta:{speed:0,health:1,gravity:0.36,stompDamage:1,spitDamageMultiplier:1,wakeDistance:145,sleepDistance:190},
  boss_sapo_rei:{health:8,jumpForce:4.5,jumpInterval:66,gravity:0.34,moveSpeed:1,stompDamage:0,normalSpitDamage:1,superSpitDamage:2},
- boss_cobra_mola:{health:8,jumpForce:7,jumpInterval:66,gravity:0.34,moveSpeed:1,stompDamage:1,normalSpitDamage:0,superSpitDamage:0},
+ boss_cobra_mola:{health:8,jumpForce:7,jumpInterval:66,gravity:0.34,moveSpeed:1,stompDamage:2,normalSpitDamage:0,superSpitDamage:0},
  camera:{followOffset:110},
  credits:{speedMultiplier:1},
  transitions:{victoryDelayMs:5000},

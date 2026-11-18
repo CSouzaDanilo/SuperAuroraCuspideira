@@ -227,3 +227,16 @@ O painel `configuracoes.html` agora permite regular os saltos do Sapo Rei e da C
 - Sprites com vaso marrom terracota e fundo transparente (14 quadros 512×384).
 - Planta olha para Aurora, espelhando horizontalmente os quadros quando necessário.
 - Colisão, vida, seis mapas JSON e editor preservados.
+
+
+## V29.4.0 — Cobra Mola
+- Chefão vermelho com escudo frontal de madeira e símbolo espiral vermelho.
+- 14 PNGs individuais em `assets/sprites/cobra_mola/` (4 idle, 4 attack, 2 hurt, 4 defeat), 512 × 384, transparentes.
+- Escudo bloqueia cuspes normais e super cuspes por padrão; pulo na cabeça causa 2 de dano, 8 HP (4 pulos).
+- Animação de salto, dano e derrota; orientação automática para a Aurora.
+- Tamanho do chefe preservado em 110×106 (duas vezes a altura do Sapo Rei 55×53).
+- Se houver configurações antigas salvas no navegador, elas podem substituir os novos padrões.
+
+
+## V29.4.1 — Correção visual da Cobra Mola
+A função drawBoss usa os PNGs de `assets/sprites/cobra_mola/` para idle, attack, hurt e defeat. O escudo, a vida, a física e as seis fases JSON não foram modificados.
